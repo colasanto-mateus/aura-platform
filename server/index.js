@@ -9,7 +9,7 @@ const path = require('path');
 const { getDB, saveDB } = require('./db');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'aura_platform_secret_key_2026';
-const PORT = parseInt(process.env.PORT || '4000', 10);
+const PORT = parseInt(process.env.PORT || '8080', 10);
 
 const app = express();
 app.use(cors());
@@ -493,6 +493,19 @@ if (fs.existsSync(clientDistPath)) {
 
 // Inicialização vinculada a 0.0.0.0 (obrigatório para Docker e Railway)
 server.listen(PORT, '0.0.0.0', () => {
-  console.log(`🚀 Servidor Aura rodando na porta ${PORT} em 0.0.0.0`);
+  console.log(`🚀 Servidor Aura principal rodando na porta ${PORT} em 0.0.0.0`);
   console.log(`📡 Acesse a plataforma no seu navegador: http://localhost:${PORT}`);
 });
+
+// Suporte duplo a portas (caso a Railway roteie para 4000 ou 8080)
+if (PORT !== 4000) {
+  try {
+    const secondaryServer = http.createServer(app);
+    io.attach(secondaryServer);
+    secondaryServer.listen(4000, '0.0.0.0', () => {
+      console.log(`🚀 Servidor Aura secundário também ativo na porta 4000 em 0.0.0.0`);
+    });
+  } catch (err) {
+    console.warn('Aviso porta 4000 secundária:', err.message);
+  }
+}

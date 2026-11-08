@@ -21,7 +21,6 @@ FROM node:20-alpine AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production
-ENV PORT=4000
 
 # Instala apenas dependências de produção do backend
 COPY package*.json ./
@@ -36,12 +35,8 @@ COPY --from=builder /build/client/dist ./client/dist
 # Cria diretório para persistência de dados
 RUN mkdir -p /app/server
 
-# Expõe a porta 4000 para acesso HTTP, WebSocket e WebRTC Signaling
-EXPOSE 4000
-
-# Verificação de Saúde do Container (Healthcheck)
-HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
-  CMD wget --no-verbose --tries=1 --spider http://127.0.0.1:${PORT:-4000}/api/health || exit 1
+# Expõe as portas compatíveis com Railway e Cloud
+EXPOSE 8080 4000
 
 # Comando de inicialização
 CMD ["node", "server/index.js"]
