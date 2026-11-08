@@ -202,7 +202,7 @@ export default function Sidebar({
           </div>
         )}
 
-        {/* 4. Rodapé do Usuário (User Profile Pill estilo Discord) */}
+        {/* 4. Rodapé do Usuário (Painel de Perfil Aura) */}
         <div className="bg-[#232428] px-2.5 py-2 flex items-center justify-between border-t border-[#1f2023]">
           <div
             onClick={onOpenProfile}

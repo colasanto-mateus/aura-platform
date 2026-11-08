@@ -21,47 +21,73 @@ let mailTransporter = null;
 if (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS) {
   mailTransporter = nodemailer.createTransport({
     host: process.env.SMTP_HOST,
-    port: parseInt(process.env.SMTP_PORT || '587', 10),
-    secure: process.env.SMTP_SECURE === 'true',
+    port: parseInt(process.env.SMTP_PORT || '465', 10),
+    secure: process.env.SMTP_SECURE ? process.env.SMTP_SECURE === 'true' : parseInt(process.env.SMTP_PORT || '465', 10) === 465,
     auth: {
       user: process.env.SMTP_USER,
       pass: process.env.SMTP_PASS
     }
   });
+  console.log('📧 Serviço de E-mail SMTP configurado com sucesso!');
+} else {
+  console.log('⚠️ Variáveis SMTP não configuradas. Configure SMTP_HOST, SMTP_USER e SMTP_PASS nas variáveis da Railway para envio real à caixa de entrada.');
 }
 
 async function sendVerificationEmail(email, code) {
-  const mailSubject = `${code} é seu código de verificação do Aura`;
+  const mailSubject = `Seu código de verificação Aura: ${code}`;
   const mailHtml = `
-    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #1e1f22; color: #dbdee1; padding: 32px; border-radius: 12px; max-width: 480px; margin: auto;">
-      <div style="text-align: center; margin-bottom: 24px;">
-        <h1 style="color: #6366f1; margin: 0; font-size: 26px; letter-spacing: -0.5px;">AURA</h1>
-        <p style="color: #949ba4; font-size: 13px; margin-top: 4px;">Sua voz, sua imagem, sua identidade</p>
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #0b0c10; color: #e2e8f0; margin: 0; padding: 40px 20px; }
+        .card { max-width: 480px; margin: 0 auto; background: #13141f; border: 1px solid rgba(99, 102, 241, 0.3); border-radius: 16px; padding: 36px; box-shadow: 0 10px 40px rgba(0,0,0,0.5); text-align: center; }
+        .logo { font-size: 28px; font-weight: 900; letter-spacing: 2px; color: #818cf8; margin-bottom: 6px; }
+        .tagline { font-size: 13px; color: #94a3b8; margin-bottom: 24px; text-transform: uppercase; letter-spacing: 1px; }
+        .title { font-size: 20px; font-weight: 700; color: #ffffff; margin-bottom: 12px; }
+        .text { font-size: 14px; line-height: 1.6; color: #cbd5e1; margin-bottom: 28px; }
+        .code-box { background: #1e1b4b; border: 2px solid #6366f1; border-radius: 12px; padding: 18px; margin: 24px 0; display: inline-block; width: 80%; }
+        .code { font-size: 36px; font-weight: 800; letter-spacing: 10px; color: #38bdf8; font-family: monospace; }
+        .footer { font-size: 12px; color: #64748b; line-height: 1.5; margin-top: 30px; border-top: 1px solid #1e293b; padding-top: 20px; }
+      </style>
+    </head>
+    <body>
+      <div class="card">
+        <div class="logo">AURA</div>
+        <div class="tagline">Sua voz, sua imagem, sua identidade</div>
+        <div class="title">Confirme seu endereço de e-mail</div>
+        <div class="text">
+          Obrigado por criar sua conta no <strong>Aura</strong>. Para garantir a segurança da sua conta e proteger a comunidade contra contas automatizadas, insira o código abaixo no aplicativo:
+        </div>
+        <div class="code-box">
+          <span class="code">${code}</span>
+        </div>
+        <div class="footer">
+          Este código expira em <strong>15 minutos</strong>.<br>
+          Se você não solicitou este cadastro, pode ignorar este e-mail com segurança.
+        </div>
       </div>
-      <p style="font-size: 15px; line-height: 1.5; color: #ffffff;">Olá,</p>
-      <p style="font-size: 14px; line-height: 1.5; color: #dbdee1;">Obrigado por criar sua conta no <strong>Aura</strong>! Para garantir a segurança e evitar bots, insira o código de 6 dígitos abaixo na tela de confirmação:</p>
-      <div style="background-color: #2b2d31; border: 2px solid #6366f1; border-radius: 10px; padding: 18px; text-align: center; margin: 28px 0;">
-        <span style="font-size: 34px; font-weight: 800; letter-spacing: 8px; color: #ffffff; font-family: monospace;">${code}</span>
-      </div>
-      <p style="font-size: 12px; color: #949ba4; line-height: 1.4;">Este código é válido por <strong>15 minutos</strong>. Se você não realizou esta solicitação, nenhuma ação adicional é necessária.</p>
-    </div>
+    </body>
+    </html>
   `;
 
   if (mailTransporter) {
     try {
       await mailTransporter.sendMail({
-        from: process.env.SMTP_FROM || '"Aura Segurança" <noreply@aura.app>',
+        from: process.env.SMTP_FROM || `"Aura Segurança" <${process.env.SMTP_USER}>`,
         to: email,
         subject: mailSubject,
         html: mailHtml
       });
-      console.log(`[E-mail Enviado] Código ${code} enviado para ${email}`);
+      console.log(`[E-mail Enviado com Sucesso] Código enviado para a caixa de entrada de ${email}`);
     } catch (err) {
-      console.error('[Erro E-mail SMTP]', err);
+      console.error('[Falha no Envio de E-mail SMTP]', err);
     }
   } else {
     console.log(`\n======================================================`);
-    console.log(`[Aura E-mail] Código de Confirmação para ${email}: ${code}`);
+    console.log(`[Aura Notificação] Código enviado para ${email}: ${code}`);
+    console.log(`[Aura Aviso] Para que o e-mail chegue diretamente à caixa de entrada do usuário em produção, adicione SMTP_HOST, SMTP_USER e SMTP_PASS nas variáveis da Railway.`);
     console.log(`======================================================\n`);
   }
 }
@@ -171,9 +197,8 @@ app.post('/api/auth/register-init', (req, res) => {
 
   return res.json({
     success: true,
-    message: `Código de verificação enviado para ${cleanEmail}!`,
-    email: cleanEmail,
-    devCode: verificationCode // Fornece o código no retorno para caso o servidor SMTP ainda não esteja configurado
+    message: `Código de verificação enviado para o seu e-mail: ${cleanEmail}`,
+    email: cleanEmail
   });
 });
 
@@ -273,8 +298,7 @@ app.post('/api/auth/resend-code', (req, res) => {
 
   return res.json({
     success: true,
-    message: 'Novo código de verificação enviado!',
-    devCode: newCode
+    message: 'Novo código de verificação enviado para o seu e-mail!'
   });
 });
 

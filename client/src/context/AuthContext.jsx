@@ -4,7 +4,7 @@ const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
-  const [token, setToken] = useState(() => localStorage.getItem('aura_token') || localStorage.getItem('nexus_token'));
+  const [token, setToken] = useState(() => localStorage.getItem('aura_token'));
   const [inventory, setInventory] = useState([]);
   const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -104,7 +104,6 @@ export function AuthProvider({ children }) {
 
   function logout() {
     localStorage.removeItem('aura_token');
-    localStorage.removeItem('nexus_token');
     setToken(null);
     setUser(null);
     setInventory([]);
