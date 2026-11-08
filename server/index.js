@@ -548,7 +548,197 @@ app.post('/api/store/equip', authMiddleware, (req, res) => {
   });
 });
 
-// Recarregar moedas (Simulação com PIX / Cartão)
+// ==========================================
+// ROTAS DE PAGAMENTO & CHECKOUT SEGURO
+// ==========================================
+
+const COIN_PACKS = {
+  pack_500: { id: 'pack_500', name: 'Pacote Básico', coins: 500, bonus: 0, priceBRL: 9.90, desc: 'Ideal para desbloquear bonequinhos ou fundos' },
+  pack_1500: { id: 'pack_1500', name: 'Pacote Profissional (Mais Popular)', coins: 1500, bonus: 250, priceBRL: 24.90, desc: 'Bônus de +250 moedas! Ideal para avatares de carreiras' },
+  pack_3500: { id: 'pack_3500', name: 'Pacote Elite Produtiva', coins: 3500, bonus: 700, priceBRL: 49.90, desc: 'Bônus de +700 moedas! Acesso a togas, jalecos e fundos 3D' },
+  pack_8000: { id: 'pack_8000', name: 'Pacote Master Corporativo', coins: 8000, bonus: 2000, priceBRL: 99.90, desc: 'Bônus de +2.000 moedas! Poder total para customizações' }
+};
+
+// 1. Criar Ordem de Pagamento (PIX / Cartão)
+app.post('/api/payment/create-order', authMiddleware, (req, res) => {
+  const { packId, method } = req.body;
+  const pack = COIN_PACKS[packId];
+  if (!pack) {
+    return res.status(400).json({ error: 'Pacote de moedas inválido' });
+  }
+
+  const db = getDB();
+  const user = db.users.find((u) => u.id === req.userId);
+  if (!user) return res.status(404).json({ error: 'Usuário não encontrado' });
+
+  const orderId = `TX-${Date.now().toString(36).toUpperCase()}-${Math.floor(1000 + Math.random() * 9000)}`;
+  const totalCoins = pack.coins + pack.bonus;
+  const priceFormatted = pack.priceBRL.toFixed(2);
+
+  // Gera chave e código PIX EMV Copia e Cola
+  const pixKey = `pagamentos@aura.app`;
+  const pixCode = `00020126580014br.gov.bcb.pix0136${pixKey}520400005303986540${priceFormatted}5802BR5917AURA PLATAFORMA6009SAO PAULO62140510${orderId}6304B7A9`;
+  const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(pixCode)}`;
+
+  const order = {
+    orderId,
+    userId: user.id,
+    packId: pack.id,
+    packName: pack.name,
+    totalCoins,
+    priceBRL: pack.priceBRL,
+    method: method || 'PIX',
+    pixCode,
+    qrCodeUrl,
+    status: 'PENDING',
+    createdAt: new Date().toISOString(),
+    expiresAt: Date.now() + 15 * 60 * 1000
+  };
+
+  if (!db.paymentOrders) db.paymentOrders = [];
+  db.paymentOrders.push(order);
+  saveDB(db);
+
+  return res.json({
+    success: true,
+    order: {
+      orderId,
+      pack,
+      totalCoins,
+      priceBRL: pack.priceBRL,
+      method: method || 'PIX',
+      pixCode,
+      qrCodeUrl,
+      expiresAt: order.expiresAt
+    }
+  });
+});
+
+// 2. Confirmar Pagamento da Ordem (Simulação bancária / Webhook BACEN)
+app.post('/api/payment/confirm-order', authMiddleware, (req, res) => {
+  const { orderId } = req.body;
+  const db = getDB();
+
+  if (!db.paymentOrders) db.paymentOrders = [];
+  const order = db.paymentOrders.find((o) => o.orderId === orderId && o.userId === req.userId);
+
+  if (!order) {
+    return res.status(404).json({ error: 'Ordem de pagamento não encontrada' });
+  }
+
+  if (order.status === 'COMPLETED') {
+    return res.status(400).json({ error: 'Este pagamento já foi aprovado e creditado anteriormente' });
+  }
+
+  const user = db.users.find((u) => u.id === req.userId);
+  if (!user) return res.status(404).json({ error: 'Usuário não encontrado' });
+
+  // Credita as moedas
+  user.coins += order.totalCoins;
+  order.status = 'COMPLETED';
+  order.completedAt = new Date().toISOString();
+
+  // Registra recibo fiscal nas transações
+  db.transactions.push({
+    id: uuidv4(),
+    userId: user.id,
+    amount: order.totalCoins,
+    type: 'PAGAMENTO_CHECKOUT',
+    description: `Recarga aprovada: ${order.packName} (R$ ${order.priceBRL.toFixed(2)}) - Ref: ${order.orderId}`,
+    createdAt: new Date().toISOString()
+  });
+
+  saveDB(db);
+
+  const { passwordHash: _, ...safeUser } = user;
+  return res.json({
+    success: true,
+    message: `Pagamento de R$ ${order.priceBRL.toFixed(2)} confirmado com sucesso! Foram adicionadas +${order.totalCoins} moedas à sua conta Aura.`,
+    user: safeUser,
+    receipt: {
+      orderId: order.orderId,
+      amountCoins: order.totalCoins,
+      paidBRL: order.priceBRL,
+      date: order.completedAt
+    }
+  });
+});
+
+// 3. Salvar Avatar 3D Customizado do Estúdio
+app.post('/api/avatar/save-custom', authMiddleware, (req, res) => {
+  const { avatarUrl, avatarConfig, animEffect } = req.body;
+  if (!avatarUrl) {
+    return res.status(400).json({ error: 'URL ou imagem do avatar não fornecida' });
+  }
+
+  const db = getDB();
+  const user = db.users.find((u) => u.id === req.userId);
+  if (!user) return res.status(404).json({ error: 'Usuário não encontrado' });
+
+  user.equippedAvatar = avatarUrl;
+  user.avatarConfig = avatarConfig || null;
+  if (animEffect) {
+    user.borderEffect = animEffect;
+  }
+
+  saveDB(db);
+  const { passwordHash: _, ...safeUser } = user;
+  return res.json({
+    success: true,
+    message: 'Avatar Aura 3D salvo e equipado com sucesso!',
+    user: safeUser
+  });
+});
+
+// 4. Modo Foco: Concluir Sessão & Resgatar Moedas de Produtividade
+app.post('/api/focus/complete-session', authMiddleware, (req, res) => {
+  const { durationMinutes, mode, topic } = req.body;
+  const minutes = parseInt(durationMinutes, 10) || 25;
+
+  // Gamificação: 25 min = 25 moedas; 50 min = 60 moedas; 15 min = 15 moedas
+  let rewardCoins = Math.max(10, Math.floor(minutes * 1.1));
+  if (minutes >= 50) rewardCoins = 60;
+
+  const db = getDB();
+  const user = db.users.find((u) => u.id === req.userId);
+  if (!user) return res.status(404).json({ error: 'Usuário não encontrado' });
+
+  user.coins += rewardCoins;
+
+  if (!db.focusSessions) db.focusSessions = [];
+  const sessionRecord = {
+    id: uuidv4(),
+    userId: user.id,
+    minutes,
+    mode: mode || 'Pomodoro 25m',
+    topic: topic || 'Sessão de Estudos & Trabalho',
+    rewardCoins,
+    completedAt: new Date().toISOString()
+  };
+  db.focusSessions.push(sessionRecord);
+
+  db.transactions.push({
+    id: uuidv4(),
+    userId: user.id,
+    amount: rewardCoins,
+    type: 'RECOMPENSA_FOCO',
+    description: `Recompensa por foco produtivo (${minutes} min): ${topic || 'Foco'}`,
+    createdAt: new Date().toISOString()
+  });
+
+  saveDB(db);
+
+  const { passwordHash: _, ...safeUser } = user;
+  return res.json({
+    success: true,
+    message: `Incrível! Você concluiu ${minutes} minutos de foco em "${topic || 'Sua meta'}" e conquistou +${rewardCoins} Moedas Aura!`,
+    coinsEarned: rewardCoins,
+    user: safeUser,
+    session: sessionRecord
+  });
+});
+
+// Recarregar moedas legado (Simulação com PIX / Cartão)
 app.post('/api/wallet/recharge', authMiddleware, (req, res) => {
   const { amount, method } = req.body;
   const numAmount = parseInt(amount, 10);

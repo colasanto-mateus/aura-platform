@@ -5,7 +5,99 @@ const DB_FILE = path.join(__dirname, 'database.json');
 
 // Default Seed Catalog
 const DEFAULT_STORE_ITEMS = [
-  // --- BONEQUINHOS / AVATARES ---
+  // --- BONEQUINHOS & AVATARES PROFISSIONAIS (DIREITO, SAÚDE, TECH, ESTUDOS) ---
+  {
+    id: 'avatar_juiz_direito',
+    name: 'Juiz de Direito (Magistrado)',
+    category: 'avatar',
+    price: 350,
+    description: 'Toga imperial de magistratura com martelo da justiça dourado e aura de autoridade.',
+    preview: 'https://api.dicebear.com/7.x/avataaars/svg?seed=MagistradoAura&clothing=blazerAndSweater&clothesColor=262e33&top=shortCurly&eyes=default',
+    assetValue: 'https://api.dicebear.com/7.x/avataaars/svg?seed=MagistradoAura&clothing=blazerAndSweater&clothesColor=262e33&top=shortCurly&eyes=default',
+    borderEffect: 'border-amber-400 shadow-[0_0_18px_rgba(245,158,11,0.8)]'
+  },
+  {
+    id: 'avatar_advogado_corporativo',
+    name: 'Advogado(a) Corporativo(a)',
+    category: 'avatar',
+    price: 260,
+    description: 'Terno executivo refinado, pasta jurídica e balança do direito.',
+    preview: 'https://api.dicebear.com/7.x/avataaars/svg?seed=AdvogadoAura&clothing=blazerAndShirt&clothesColor=3c4f5e&top=frizzle&accessories=round',
+    assetValue: 'https://api.dicebear.com/7.x/avataaars/svg?seed=AdvogadoAura&clothing=blazerAndShirt&clothesColor=3c4f5e&top=frizzle&accessories=round',
+    borderEffect: 'border-indigo-400 shadow-[0_0_15px_rgba(99,102,241,0.7)]'
+  },
+  {
+    id: 'avatar_promotor_justica',
+    name: 'Promotor(a) de Justiça',
+    category: 'avatar',
+    price: 300,
+    description: 'Ministério Público com terno sóbrio, distintivo ministerial e oratória impecável.',
+    preview: 'https://api.dicebear.com/7.x/avataaars/svg?seed=PromotorAura&clothing=blazerAndShirt&clothesColor=25557c&top=shortFlat&eyes=surprised',
+    assetValue: 'https://api.dicebear.com/7.x/avataaars/svg?seed=PromotorAura&clothing=blazerAndShirt&clothesColor=25557c&top=shortFlat&eyes=surprised',
+    borderEffect: 'border-blue-400 shadow-[0_0_15px_rgba(96,165,250,0.7)]'
+  },
+  {
+    id: 'avatar_delegado_policia',
+    name: 'Delegado(a) de Polícia',
+    category: 'avatar',
+    price: 320,
+    description: 'Distintivo dourado no peito, postura resoluta e jaqueta tática operacional.',
+    preview: 'https://api.dicebear.com/7.x/avataaars/svg?seed=DelegadoAura&clothing=collarAndSweater&clothesColor=262e33&top=shortWaved&facialHair=beardLight',
+    assetValue: 'https://api.dicebear.com/7.x/avataaars/svg?seed=DelegadoAura&clothing=collarAndSweater&clothesColor=262e33&top=shortWaved&facialHair=beardLight',
+    borderEffect: 'border-yellow-500 shadow-[0_0_15px_rgba(234,179,8,0.75)]'
+  },
+  {
+    id: 'avatar_medico_especialista',
+    name: 'Médico(a) Especialista',
+    category: 'avatar',
+    price: 280,
+    description: 'Jaleco branco hospitalar com estetoscópio e olhar clínico humanizado.',
+    preview: 'https://api.dicebear.com/7.x/avataaars/svg?seed=MedicoAura&clothing=overall&clothesColor=ffffff&top=straight01&accessories=eyepatch',
+    assetValue: 'https://api.dicebear.com/7.x/avataaars/svg?seed=MedicoAura&clothing=overall&clothesColor=ffffff&top=straight01&accessories=eyepatch',
+    borderEffect: 'border-cyan-400 shadow-[0_0_15px_rgba(34,211,238,0.75)]'
+  },
+  {
+    id: 'avatar_dentista_cirurgiao',
+    name: 'Cirurgião(ã) Dentista',
+    category: 'avatar',
+    price: 240,
+    description: 'Traje clínico cirúrgico ciano e equipamentos de alta precisão odontológica.',
+    preview: 'https://api.dicebear.com/7.x/avataaars/svg?seed=DentistaAura&clothing=collarAndSweater&clothesColor=65c9ff&top=bob&eyes=happy',
+    assetValue: 'https://api.dicebear.com/7.x/avataaars/svg?seed=DentistaAura&clothing=collarAndSweater&clothesColor=65c9ff&top=bob&eyes=happy',
+    borderEffect: 'border-teal-400 shadow-[0_0_15px_rgba(45,212,191,0.7)]'
+  },
+  {
+    id: 'avatar_tech_architect',
+    name: 'Arquiteto(a) Tech / Dev Lead',
+    category: 'avatar',
+    price: 250,
+    description: 'Moletom dark mode, óculos de proteção contra luz azul e matriz de código flutuante.',
+    preview: 'https://api.dicebear.com/7.x/avataaars/svg?seed=TechLeadAura&clothing=hoodie&clothesColor=262e33&accessories=round&top=shortDreads',
+    assetValue: 'https://api.dicebear.com/7.x/avataaars/svg?seed=TechLeadAura&clothing=hoodie&clothesColor=262e33&accessories=round&top=shortDreads',
+    borderEffect: 'border-emerald-400 shadow-[0_0_15px_rgba(52,211,153,0.75)]'
+  },
+  {
+    id: 'avatar_cyber_security',
+    name: 'Especialista em Cyber Security',
+    category: 'avatar',
+    price: 300,
+    description: 'Capuz furtivo com HUD quântico de análise de tráfego de rede e segurança de dados.',
+    preview: 'https://api.dicebear.com/7.x/bottts/svg?seed=CyberSecurityAura&backgroundColor=022c22',
+    assetValue: 'https://api.dicebear.com/7.x/bottts/svg?seed=CyberSecurityAura&backgroundColor=022c22',
+    borderEffect: 'border-emerald-500 shadow-[0_0_20px_rgba(16,185,129,0.85)] animate-pulse'
+  },
+  {
+    id: 'avatar_estudante_foco',
+    name: 'Estudante Focado & Concurseiro',
+    category: 'avatar',
+    price: 180,
+    description: 'Xícara de café expresso, livros de doutrina e fone de cancelamento de ruído.',
+    preview: 'https://api.dicebear.com/7.x/avataaars/svg?seed=EstudanteAura&clothing=graphicShirt&clothesColor=929598&top=curly&accessories=prescription02',
+    assetValue: 'https://api.dicebear.com/7.x/avataaars/svg?seed=EstudanteAura&clothing=graphicShirt&clothesColor=929598&top=curly&accessories=prescription02',
+    borderEffect: 'border-violet-400 shadow-[0_0_14px_rgba(167,139,250,0.7)]'
+  },
+
+  // --- BONEQUINHOS DE JOGOS & SCI-FI ---
   {
     id: 'avatar_cyber_ninja',
     name: 'Ninja Cyberpunk',
@@ -25,26 +117,6 @@ const DEFAULT_STORE_ITEMS = [
     preview: 'https://api.dicebear.com/7.x/bottts/svg?seed=MechaTitan&backgroundColor=0f172a',
     assetValue: 'https://api.dicebear.com/7.x/bottts/svg?seed=MechaTitan&backgroundColor=0f172a',
     borderEffect: 'border-blue-500 shadow-[0_0_15px_rgba(59,130,246,0.7)]'
-  },
-  {
-    id: 'avatar_cat_gamer',
-    name: 'Gato Gamer Pro',
-    category: 'avatar',
-    price: 250,
-    description: 'Felino com fone de ouvido gamer com orelhas luminosas e óculos pixel.',
-    preview: 'https://api.dicebear.com/7.x/bottts/svg?seed=CatGamer&backgroundColor=ec4899',
-    assetValue: 'https://api.dicebear.com/7.x/bottts/svg?seed=CatGamer&backgroundColor=ec4899',
-    borderEffect: 'border-pink-500 shadow-[0_0_15px_rgba(236,72,153,0.7)]'
-  },
-  {
-    id: 'avatar_anime_mage',
-    name: 'Mago Cósmico',
-    category: 'avatar',
-    price: 300,
-    description: 'Conjurador arcano das estrelas cercado por constelações brilhantes.',
-    preview: 'https://api.dicebear.com/7.x/bottts/svg?seed=CosmicMage&backgroundColor=581c87',
-    assetValue: 'https://api.dicebear.com/7.x/bottts/svg?seed=CosmicMage&backgroundColor=581c87',
-    borderEffect: 'border-purple-500 shadow-[0_0_15px_rgba(168,85,247,0.7)] animate-pulse'
   },
   {
     id: 'avatar_golden_king',
@@ -67,7 +139,43 @@ const DEFAULT_STORE_ITEMS = [
     borderEffect: 'border-emerald-400 shadow-[0_0_10px_rgba(52,211,153,0.6)]'
   },
 
-  // --- FUNDOS DE TELA (WALLPAPERS / BANNERS) ---
+  // --- FUNDOS DE TELA PROFISSIONAIS & TEMÁTICOS ---
+  {
+    id: 'bg_tribunal_justica',
+    name: 'Tribunal de Justiça & Plenário',
+    category: 'background',
+    price: 260,
+    description: 'Plenário solene com bancada de madeira de lei, tribuna e símbolos da justiça.',
+    preview: 'https://images.unsplash.com/photo-1589829545856-d10d557cf95f?auto=format&fit=crop&w=400&q=80',
+    assetValue: 'https://images.unsplash.com/photo-1589829545856-d10d557cf95f?auto=format&fit=crop&w=1600&q=80'
+  },
+  {
+    id: 'bg_clinica_medica',
+    name: 'Consultório & Clínica Médica Premium',
+    category: 'background',
+    price: 240,
+    description: 'Ambiente hospitalar moderno, clean e tecnológico de alta precisão biomédica.',
+    preview: 'https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&w=400&q=80',
+    assetValue: 'https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&w=1600&q=80'
+  },
+  {
+    id: 'bg_datacenter_tech',
+    name: 'Data Center & Terminal Cloud',
+    category: 'background',
+    price: 250,
+    description: 'Corredor de servidores ultra-rápidos com LEDs azuis e arquitetura de dados.',
+    preview: 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?auto=format&fit=crop&w=400&q=80',
+    assetValue: 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?auto=format&fit=crop&w=1600&q=80'
+  },
+  {
+    id: 'bg_biblioteca_estudos',
+    name: 'Biblioteca Clássica de Estudos',
+    category: 'background',
+    price: 200,
+    description: 'Galeria histórica com prateleiras infinitas de doutrina e mesas silenciosas de carvalho.',
+    preview: 'https://images.unsplash.com/photo-1521587760476-6c12a4b040da?auto=format&fit=crop&w=400&q=80',
+    assetValue: 'https://images.unsplash.com/photo-1521587760476-6c12a4b040da?auto=format&fit=crop&w=1600&q=80'
+  },
   {
     id: 'bg_neon_tokyo',
     name: 'Metrópole Cyberpunk',
@@ -220,11 +328,13 @@ const DEFAULT_STORE_ITEMS = [
 
 const DEFAULT_CHANNELS = [
   { id: 'canal-geral', name: 'geral', type: 'text', description: 'Canal de texto principal para conversar com a comunidade' },
-  { id: 'canal-jogos', name: 'jogos-e-animes', type: 'text', description: 'Discussões de games, clipes e novidades' },
-  { id: 'canal-musica', name: 'musica-e-memes', type: 'text', description: 'Compartilhe suas músicas e memes favoritos' },
+  { id: 'canal-direito', name: 'direito-e-leis', type: 'text', description: 'Discussões jurídicas, jurisprudência, concursos e carreira do Direito' },
+  { id: 'canal-saude', name: 'medicina-e-saude', type: 'text', description: 'Artigos científicos, residência, casos clínicos e saúde' },
+  { id: 'canal-tech', name: 'tecnologia-e-dev', type: 'text', description: 'Programação, engenharia de software, inteligência artificial e carreiras' },
+  { id: 'canal-estudos', name: 'sala-de-estudos-foco', type: 'text', description: 'Compartilhamento de metas de estudo, técnicas de foco e aprovações' },
   { id: 'voz-geral', name: 'Voz & Câmera Geral', type: 'voice', description: 'Canal de voz aberto com suporte a webcam' },
-  { id: 'voz-jogando', name: 'Jogando Juntos', type: 'voice', description: 'Call para jogar e transmitir vídeo/áudio' },
-  { id: 'voz-cinema', name: 'Cinema & Resenha', type: 'voice', description: 'Sala de conferência para assistir e bater papo' }
+  { id: 'voz-foco', name: 'Pomodoro & Foco Silencioso', type: 'voice', description: 'Sala de foco compartilhado: trabalhe e estude em silêncio' },
+  { id: 'voz-reunioes', name: 'Sala de Debates & Reuniões', type: 'voice', description: 'Espaço profissional para reuniões de trabalho e debates acadêmicos' }
 ];
 
 function initDB() {
@@ -258,6 +368,28 @@ function initDB() {
     const content = fs.readFileSync(DB_FILE, 'utf-8');
     const data = JSON.parse(content);
     if (!data.pendingRegistrations) data.pendingRegistrations = [];
+    if (!data.focusSessions) data.focusSessions = [];
+    if (!data.paymentOrders) data.paymentOrders = [];
+
+    // Mescla novos canais se ainda não existirem
+    DEFAULT_CHANNELS.forEach((defCh) => {
+      if (!data.channels.some((c) => c.id === defCh.id)) {
+        data.channels.push(defCh);
+      }
+    });
+
+    // Mescla novos itens da loja
+    DEFAULT_STORE_ITEMS.forEach((defItem) => {
+      const idx = data.storeItems.findIndex((s) => s.id === defItem.id);
+      if (idx === -1) {
+        data.storeItems.push(defItem);
+      } else {
+        // Atualiza dados e previews
+        data.storeItems[idx] = { ...data.storeItems[idx], ...defItem };
+      }
+    });
+
+    fs.writeFileSync(DB_FILE, JSON.stringify(data, null, 2), 'utf-8');
     return data;
   } catch (err) {
     console.error('Erro ao ler DB, recriando...', err);

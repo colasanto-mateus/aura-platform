@@ -165,6 +165,73 @@ export function AuthProvider({ children }) {
     return data;
   }
 
+  // 1. Criar Ordem de Pagamento no Checkout Seguro (PIX / Cartão)
+  async function createCheckoutOrder(packId, method = 'PIX') {
+    if (!token) throw new Error('Você precisa estar logado para recarregar moedas');
+    const res = await fetch('/api/payment/create-order', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`
+      },
+      body: JSON.stringify({ packId, method })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Erro ao gerar ordem de pagamento');
+    return data.order;
+  }
+
+  // 2. Confirmar Pagamento da Ordem (Liberação instantânea das moedas)
+  async function confirmCheckoutOrder(orderId) {
+    if (!token) throw new Error('Sessão expirada');
+    const res = await fetch('/api/payment/confirm-order', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`
+      },
+      body: JSON.stringify({ orderId })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Erro ao validar pagamento');
+    setUser(data.user);
+    return data;
+  }
+
+  // 3. Salvar Avatar 3D Customizado do Estúdio
+  async function saveCustomAvatar(avatarUrl, avatarConfig, animEffect) {
+    if (!token) throw new Error('Você precisa estar logado');
+    const res = await fetch('/api/avatar/save-custom', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`
+      },
+      body: JSON.stringify({ avatarUrl, avatarConfig, animEffect })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Erro ao salvar avatar');
+    setUser(data.user);
+    return data;
+  }
+
+  // 4. Concluir Sessão de Foco / Pomodoro e Resgatar Moedas
+  async function completeFocusSession(durationMinutes, mode, topic) {
+    if (!token) throw new Error('Você precisa estar logado');
+    const res = await fetch('/api/focus/complete-session', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`
+      },
+      body: JSON.stringify({ durationMinutes, mode, topic })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Erro ao resgatar recompensa');
+    setUser(data.user);
+    return data;
+  }
+
   return (
     <AuthContext.Provider
       value={{
@@ -181,6 +248,10 @@ export function AuthProvider({ children }) {
         buyItem,
         equipItem,
         rechargeCoins,
+        createCheckoutOrder,
+        confirmCheckoutOrder,
+        saveCustomAvatar,
+        completeFocusSession,
         refreshUser: () => fetchProfile(token)
       }}
     >

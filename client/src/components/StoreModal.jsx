@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import confetti from 'canvas-confetti';
+import PaymentModal from './PaymentModal';
 import {
   ShoppingBag,
   Sparkles,
@@ -13,18 +14,19 @@ import {
   Palette,
   Type,
   Image as ImageIcon,
-  Bot
+  Bot,
+  Wand2
 } from 'lucide-react';
 
-export default function StoreModal({ isOpen, onClose }) {
+export default function StoreModal({ isOpen, onClose, onOpenAvatarStudio }) {
   if (!isOpen) return null;
 
-  const { user, inventory, buyItem, equipItem, rechargeCoins } = useAuth();
+  const { user, inventory, buyItem, equipItem } = useAuth();
   const [activeTab, setActiveTab] = useState('avatar'); // 'avatar' | 'background' | 'color' | 'font'
   const [storeItems, setStoreItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [purchasingId, setPurchasingId] = useState(null);
-  const [showRechargeModal, setShowRechargeModal] = useState(false);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [feedbackMsg, setFeedbackMsg] = useState(null);
 
   // Busca itens da loja
@@ -135,13 +137,27 @@ export default function StoreModal({ isOpen, onClose }) {
               <span className="text-xs text-slate-400">moedas</span>
             </div>
 
+            {/* Botão Estúdio de Avatar 3D */}
+            {onOpenAvatarStudio && (
+              <button
+                onClick={() => {
+                  onClose();
+                  onOpenAvatarStudio();
+                }}
+                className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white text-xs font-bold rounded-xl shadow-md shadow-purple-600/20 transition cursor-pointer"
+              >
+                <Wand2 className="w-3.5 h-3.5 text-pink-200" />
+                <span>Criar Meu Avatar 3D</span>
+              </button>
+            )}
+
             {/* Botão de Recarga */}
             <button
-              onClick={() => setShowRechargeModal(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold rounded-xl shadow-md shadow-emerald-600/20 transition cursor-pointer"
+              onClick={() => setShowPaymentModal(true)}
+              className="flex items-center gap-1.5 px-3.5 py-1.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold rounded-xl shadow-md shadow-emerald-600/20 transition cursor-pointer"
             >
               <Sparkles className="w-3.5 h-3.5 text-amber-300" />
-              <span>+ Recarregar</span>
+              <span>+ Recarregar Moedas</span>
             </button>
 
             {/* Fechar Modal */}
@@ -341,12 +357,18 @@ export default function StoreModal({ isOpen, onClose }) {
                         )
                       ) : (
                         <button
-                          onClick={() => handleBuy(item)}
-                          disabled={!canAfford || purchasingId === item.id}
+                          onClick={() => {
+                            if (canAfford) {
+                              handleBuy(item);
+                            } else {
+                              setShowPaymentModal(true);
+                            }
+                          }}
+                          disabled={purchasingId === item.id}
                           className={`w-full py-2 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer ${
                             canAfford
                               ? 'bg-amber-500 hover:bg-amber-400 text-slate-950 font-black shadow-md shadow-amber-500/20'
-                              : 'bg-slate-700 text-slate-400 cursor-not-allowed'
+                              : 'bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white'
                           }`}
                         >
                           {purchasingId === item.id ? (
@@ -357,7 +379,10 @@ export default function StoreModal({ isOpen, onClose }) {
                               <span>Comprar por {item.price} Moedas</span>
                             </>
                           ) : (
-                            <span>Moedas Insuficientes</span>
+                            <span className="flex items-center gap-1">
+                              <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+                              <span>Moedas Insuficientes (Recarregar)</span>
+                            </span>
                           )}
                         </button>
                       )}
@@ -370,92 +395,11 @@ export default function StoreModal({ isOpen, onClose }) {
         </div>
       </div>
 
-      {/* MODAL DE RECARGA DE MOEDAS (PIX & SIMULAÇÃO) */}
-      {showRechargeModal && (
-        <div className="fixed inset-0 z-60 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-          <div className="w-full max-w-md bg-[#2b2d31] rounded-2xl border border-emerald-500/40 p-6 shadow-2xl animate-in zoom-in-95">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-700">
-              <div className="flex items-center gap-2">
-                <Coins className="w-5 h-5 text-amber-400" />
-                <h3 className="font-bold text-white text-lg">Recarga de Moedas Aura</h3>
-              </div>
-              <button
-                onClick={() => setShowRechargeModal(false)}
-                className="text-slate-400 hover:text-white"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <p className="text-xs text-slate-400 mt-3 mb-4">
-              Escolha um pacote para desbloquear imediatamente novos bonequinhos, fundos e fontes exclusivas via PIX Instantâneo.
-            </p>
-
-            <div className="space-y-3">
-              {/* Pacote 1 */}
-              <div className="flex items-center justify-between p-3.5 rounded-xl bg-[#1e1f22] border border-slate-700 hover:border-emerald-500 transition">
-                <div>
-                  <div className="font-bold text-white text-sm flex items-center gap-1.5">
-                    <Coins className="w-4 h-4 text-amber-400" />
-                    <span>500 Moedas</span>
-                  </div>
-                  <div className="text-xs text-slate-400">Ideal para 2 bonequinhos</div>
-                </div>
-                <button
-                  onClick={() => handleRecharge(500, '500 Moedas')}
-                  className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-lg transition cursor-pointer"
-                >
-                  R$ 9,90 (PIX)
-                </button>
-              </div>
-
-              {/* Pacote 2 (Mais Popular) */}
-              <div className="relative flex items-center justify-between p-3.5 rounded-xl bg-[#1e1f22] border-2 border-emerald-500 shadow-md shadow-emerald-500/10">
-                <span className="absolute -top-2.5 right-3 bg-emerald-500 text-slate-950 font-black text-[10px] px-2 py-0.2 rounded-full uppercase">
-                  Mais Popular
-                </span>
-                <div>
-                  <div className="font-bold text-white text-sm flex items-center gap-1.5">
-                    <Coins className="w-4 h-4 text-amber-400" />
-                    <span>1.200 Moedas</span>
-                  </div>
-                  <div className="text-xs text-emerald-400">+200 Moedas Bônus</div>
-                </div>
-                <button
-                  onClick={() => handleRecharge(1200, '1200 Moedas')}
-                  className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-lg transition cursor-pointer"
-                >
-                  R$ 19,90 (PIX)
-                </button>
-              </div>
-
-              {/* Pacote 3 (Lendário) */}
-              <div className="flex items-center justify-between p-3.5 rounded-xl bg-[#1e1f22] border border-amber-500/50 hover:border-amber-400 transition">
-                <div>
-                  <div className="font-bold text-amber-300 text-sm flex items-center gap-1.5">
-                    <Sparkles className="w-4 h-4 text-amber-400" />
-                    <span>3.000 Moedas</span>
-                  </div>
-                  <div className="text-xs text-slate-400">Desbloqueie todo o catálogo</div>
-                </div>
-                <button
-                  onClick={() => handleRecharge(3000, '3000 Moedas')}
-                  className="px-4 py-2 bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-slate-950 font-black text-xs rounded-lg transition cursor-pointer"
-                >
-                  R$ 39,90 (PIX)
-                </button>
-              </div>
-            </div>
-
-            <div className="mt-5 p-3 rounded-xl bg-[#1e1f22] text-center border border-slate-700/60">
-              <div className="text-xs text-slate-400 flex items-center justify-center gap-1">
-                <QrCode className="w-4 h-4 text-emerald-400" />
-                <span>Simulação interativa imediata de pagamento PIX</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* CHECKOUT SEGURO & PLATAFORMA DE PAGAMENTO */}
+      <PaymentModal
+        isOpen={showPaymentModal}
+        onClose={() => setShowPaymentModal(false)}
+      />
     </div>
   );
 }

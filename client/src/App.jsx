@@ -7,6 +7,9 @@ import VoiceVideoPanel from './components/VoiceVideoPanel';
 import StoreModal from './components/StoreModal';
 import ProfileModal from './components/ProfileModal';
 import AuthModal from './components/AuthModal';
+import PaymentModal from './components/PaymentModal';
+import AvatarStudioModal from './components/AvatarStudioModal';
+import FocusModeModal from './components/FocusModeModal';
 
 export default function App() {
   const { user, loading } = useAuth();
@@ -28,6 +31,9 @@ export default function App() {
   // Modais
   const [isStoreOpen, setIsStoreOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [isPaymentOpen, setIsPaymentOpen] = useState(false);
+  const [isAvatarStudioOpen, setIsAvatarStudioOpen] = useState(false);
+  const [isFocusModeOpen, setIsFocusModeOpen] = useState(false);
 
   // Refs de Comunicação
   const socketRef = useRef(null);
@@ -402,6 +408,9 @@ export default function App() {
         onLeaveVoice={leaveVoiceChannel}
         onOpenStore={() => setIsStoreOpen(true)}
         onOpenProfile={() => setIsProfileOpen(true)}
+        onOpenFocusMode={() => setIsFocusModeOpen(true)}
+        onOpenAvatarStudio={() => setIsAvatarStudioOpen(true)}
+        onOpenPayment={() => setIsPaymentOpen(true)}
         isMicMuted={isMicMuted}
         onToggleMic={handleToggleMic}
         isVideoOff={isVideoOff}
@@ -435,7 +444,29 @@ export default function App() {
       )}
 
       {/* Modal da Loja de Cosméticos (Bonequinhos, Fundos, Cores e Letras) */}
-      <StoreModal isOpen={isStoreOpen} onClose={() => setIsStoreOpen(false)} />
+      <StoreModal
+        isOpen={isStoreOpen}
+        onClose={() => setIsStoreOpen(false)}
+        onOpenAvatarStudio={() => setIsAvatarStudioOpen(true)}
+      />
+
+      {/* Modal de Checkout & Plataforma de Pagamento Segura (PIX / Cartão) */}
+      <PaymentModal
+        isOpen={isPaymentOpen}
+        onClose={() => setIsPaymentOpen(false)}
+      />
+
+      {/* Estúdio de Criação de Avatar 3D (A partir de foto / customizador de trajes) */}
+      <AvatarStudioModal
+        isOpen={isAvatarStudioOpen}
+        onClose={() => setIsAvatarStudioOpen(false)}
+      />
+
+      {/* Modo Foco & Pomodoro para Estudo / Trabalho */}
+      <FocusModeModal
+        isOpen={isFocusModeOpen}
+        onClose={() => setIsFocusModeOpen(false)}
+      />
 
       {/* Modal de Perfil e Inventário */}
       <ProfileModal
