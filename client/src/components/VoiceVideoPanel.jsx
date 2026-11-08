@@ -11,7 +11,9 @@ import {
   Sparkles,
   Users,
   Settings,
-  Maximize2
+  Maximize2,
+  Shield,
+  Lock
 } from 'lucide-react';
 
 export default function VoiceVideoPanel({
@@ -39,6 +41,10 @@ export default function VoiceVideoPanel({
 
   // Função para compartilhar tela
   async function toggleScreenShare() {
+    if (user?.isMinor) {
+      alert('Recurso Protegido: Compartilhamento de tela é desativado para contas de 10 a 17 anos por diretriz de segurança infantil.');
+      return;
+    }
     if (isScreenSharing) {
       if (screenStream) {
         screenStream.getTracks().forEach((track) => track.stop());
@@ -62,6 +68,21 @@ export default function VoiceVideoPanel({
 
   return (
     <div className="flex-1 flex flex-col h-screen bg-[#1e1f22] select-none">
+      {/* Banner de Proteção Infantil para Menores de Idade (10-17 anos) */}
+      {user?.isMinor && (
+        <div className="bg-gradient-to-r from-emerald-950 via-slate-900 to-emerald-950 border-b border-emerald-500/30 px-6 py-2.5 flex items-center justify-between text-xs text-emerald-300 shrink-0">
+          <div className="flex items-center gap-2">
+            <Shield className="w-4 h-4 text-emerald-400 shrink-0" />
+            <span className="font-bold">Modo Ouvinte Protegido (10-17 anos) Ativo:</span>
+            <span className="text-slate-300 hidden md:inline">
+              Você pode ouvir as conversas e aulas normalmente. Microfone, webcam e compartilhamento estão desativados por segurança.
+            </span>
+          </div>
+          <span className="text-[10px] font-mono bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded-full border border-emerald-500/40 font-bold shrink-0">
+            PROTEÇÃO INFANTIL
+          </span>
+        </div>
+      )}
       {/* 1. Barra Superior da Chamada */}
       <div className="h-14 px-6 flex items-center justify-between border-b border-[#2b2d31] bg-[#2b2d31]/50 backdrop-blur shrink-0">
         <div className="flex items-center gap-3">
@@ -124,7 +145,9 @@ export default function VoiceVideoPanel({
                 >
                   {user?.username}
                 </span>
-                <span className="text-xs text-slate-400 block mt-0.5">Câmera desativada</span>
+                <span className="text-xs text-slate-400 block mt-0.5">
+                  {user?.isMinor ? '🛡️ Ouvinte Protegido (10-17 anos)' : 'Câmera desativada'}
+                </span>
               </div>
             </div>
           )}
@@ -233,44 +256,107 @@ export default function VoiceVideoPanel({
       <div className="h-20 bg-[#111214] border-t border-[#2b2d31] flex items-center justify-center gap-4 px-6 shrink-0">
         {/* Toggle Microfone */}
         <button
-          onClick={onToggleMic}
-          className={`flex flex-col items-center justify-center w-14 h-14 rounded-2xl transition cursor-pointer ${
-            isMicMuted
+          onClick={
+            user?.isMinor
+              ? () => alert('Recurso Protegido: O uso de microfone é desativado para contas de 10 a 17 anos por diretriz de segurança e proteção infantil.')
+              : onToggleMic
+          }
+          className={`relative flex flex-col items-center justify-center w-14 h-14 rounded-2xl transition cursor-pointer ${
+            user?.isMinor
+              ? 'bg-slate-800/80 text-slate-500 border border-slate-700/50'
+              : isMicMuted
               ? 'bg-red-500/20 text-red-400 hover:bg-red-500 hover:text-white border border-red-500/30'
               : 'bg-[#2b2d31] text-white hover:bg-[#35373c]'
           }`}
-          title={isMicMuted ? 'Desmutar Microfone' : 'Mutar Microfone'}
+          title={
+            user?.isMinor
+              ? 'Microfone Desativado (Modo Protegido 10-17 anos)'
+              : isMicMuted
+              ? 'Desmutar Microfone'
+              : 'Mutar Microfone'
+          }
         >
-          {isMicMuted ? <MicOff className="w-6 h-6" /> : <Mic className="w-6 h-6" />}
-          <span className="text-[10px] font-medium mt-1">{isMicMuted ? 'Mudo' : 'Microfone'}</span>
+          {user?.isMinor ? (
+            <>
+              <MicOff className="w-6 h-6 text-slate-500" />
+              <Lock className="w-3 h-3 text-amber-400 absolute top-1.5 right-1.5" />
+            </>
+          ) : isMicMuted ? (
+            <MicOff className="w-6 h-6" />
+          ) : (
+            <Mic className="w-6 h-6" />
+          )}
+          <span className="text-[10px] font-medium mt-1">
+            {user?.isMinor ? 'Protegido' : isMicMuted ? 'Mudo' : 'Microfone'}
+          </span>
         </button>
 
         {/* Toggle Câmera */}
         <button
-          onClick={onToggleVideo}
-          className={`flex flex-col items-center justify-center w-14 h-14 rounded-2xl transition cursor-pointer ${
-            isVideoOff
+          onClick={
+            user?.isMinor
+              ? () => alert('Recurso Protegido: O uso de webcam/câmera é desativado para contas de 10 a 17 anos por diretriz de segurança e proteção infantil.')
+              : onToggleVideo
+          }
+          className={`relative flex flex-col items-center justify-center w-14 h-14 rounded-2xl transition cursor-pointer ${
+            user?.isMinor
+              ? 'bg-slate-800/80 text-slate-500 border border-slate-700/50'
+              : isVideoOff
               ? 'bg-[#2b2d31] text-slate-400 hover:bg-[#35373c] hover:text-white'
               : 'bg-cyan-500/20 text-cyan-400 hover:bg-cyan-500 hover:text-white border border-cyan-500/30'
           }`}
-          title={isVideoOff ? 'Ligar Câmera' : 'Desligar Câmera'}
+          title={
+            user?.isMinor
+              ? 'Webcam Desativada (Modo Protegido 10-17 anos)'
+              : isVideoOff
+              ? 'Ligar Câmera'
+              : 'Desligar Câmera'
+          }
         >
-          {isVideoOff ? <VideoOff className="w-6 h-6" /> : <Video className="w-6 h-6" />}
-          <span className="text-[10px] font-medium mt-1">{isVideoOff ? 'Câmera Off' : 'Câmera On'}</span>
+          {user?.isMinor ? (
+            <>
+              <VideoOff className="w-6 h-6 text-slate-500" />
+              <Lock className="w-3 h-3 text-amber-400 absolute top-1.5 right-1.5" />
+            </>
+          ) : isVideoOff ? (
+            <VideoOff className="w-6 h-6" />
+          ) : (
+            <Video className="w-6 h-6" />
+          )}
+          <span className="text-[10px] font-medium mt-1">
+            {user?.isMinor ? 'Protegido' : isVideoOff ? 'Câmera Off' : 'Câmera On'}
+          </span>
         </button>
 
         {/* Compartilhar Tela */}
         <button
-          onClick={toggleScreenShare}
-          className={`flex flex-col items-center justify-center w-14 h-14 rounded-2xl transition cursor-pointer ${
-            isScreenSharing
+          onClick={
+            user?.isMinor
+              ? () => alert('Recurso Protegido: Compartilhamento de tela é desativado para contas de 10 a 17 anos por diretriz de segurança infantil.')
+              : toggleScreenShare
+          }
+          className={`relative flex flex-col items-center justify-center w-14 h-14 rounded-2xl transition cursor-pointer ${
+            user?.isMinor
+              ? 'bg-slate-800/80 text-slate-500 border border-slate-700/50'
+              : isScreenSharing
               ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30'
               : 'bg-[#2b2d31] text-slate-300 hover:bg-[#35373c]'
           }`}
-          title={isScreenSharing ? 'Parar Compartilhamento' : 'Compartilhar Tela'}
+          title={
+            user?.isMinor
+              ? 'Compartilhamento de Tela Desativado (Modo Protegido 10-17 anos)'
+              : isScreenSharing
+              ? 'Parar Compartilhamento'
+              : 'Compartilhar Tela'
+          }
         >
           <Monitor className="w-6 h-6" />
-          <span className="text-[10px] font-medium mt-1">{isScreenSharing ? 'Compartilhando' : 'Tela'}</span>
+          {user?.isMinor && (
+            <Lock className="w-3 h-3 text-amber-400 absolute top-1.5 right-1.5" />
+          )}
+          <span className="text-[10px] font-medium mt-1">
+            {user?.isMinor ? 'Protegido' : isScreenSharing ? 'Compartilhando' : 'Tela'}
+          </span>
         </button>
 
         {/* Desconectar Chamada */}

@@ -22,7 +22,10 @@ import {
   Scale,
   Stethoscope,
   Code2,
-  BookOpen
+  BookOpen,
+  Lock,
+  Shield,
+  ShieldCheck
 } from 'lucide-react';
 
 export default function Sidebar({
@@ -79,12 +82,44 @@ export default function Sidebar({
           <span className="text-sm font-bold font-orbitron">AU</span>
         </button>
 
-        {/* Botão Adicionar */}
+        {/* Botão Adicionar Canal ou Sala */}
         <button
-          title="Adicionar um Servidor"
-          className="flex items-center justify-center w-12 h-12 rounded-3xl bg-[#313338] hover:bg-emerald-600 hover:rounded-xl transition-all duration-200 text-emerald-400 hover:text-white group cursor-pointer"
+          onClick={() => {
+            if (user?.isMinor) {
+              alert('Recurso Bloqueado: Por diretrizes de proteção e segurança infantil, apenas usuários maiores de 18 anos têm permissão para criar salas e canais de bate-papo.');
+              return;
+            }
+            const name = prompt('Digite o nome do novo canal (ex: concurso-direito, python-avancado):');
+            if (!name || !name.trim()) return;
+            const isVoice = confirm('Deseja que este canal seja de Voz & Câmera? (Clique OK para Voz, Cancelar para Texto)');
+            fetch('/api/channels/create', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${localStorage.getItem('aura_token')}`
+              },
+              body: JSON.stringify({ name: name.trim(), type: isVoice ? 'voice' : 'text' })
+            })
+              .then((r) => r.json())
+              .then((d) => {
+                if (d.error) alert(d.error);
+                else alert(`Canal #${d.channel?.name} criado com sucesso!`);
+              })
+              .catch((err) => alert('Erro ao criar canal: ' + err.message));
+          }}
+          title={
+            user?.isMinor
+              ? 'Criação de Canais Bloqueada para Menores de 18 Anos'
+              : 'Criar Novo Canal ou Sala'
+          }
+          className="relative flex items-center justify-center w-12 h-12 rounded-3xl bg-[#313338] hover:bg-emerald-600 hover:rounded-xl transition-all duration-200 text-emerald-400 hover:text-white group cursor-pointer"
         >
           <Plus className="w-6 h-6" />
+          {user?.isMinor && (
+            <span className="absolute -top-1 -right-1 bg-amber-500 text-slate-950 p-0.5 rounded-full" title="Protegido">
+              <Lock className="w-3 h-3" />
+            </span>
+          )}
         </button>
 
         {/* Botão Modo Foco no Trilho */}
@@ -288,13 +323,35 @@ export default function Sidebar({
               >
                 {user?.username}
               </div>
+              
+              {/* Badge de Faixa Etária e Proteção Infantil */}
+              <div className="flex items-center gap-1.5 mt-0.5">
+                {user?.isMinor ? (
+                  <span
+                    title="Conta Jovem Protegida: Microfone, webcam e criação de canais restritos por segurança infantil."
+                    className="inline-flex items-center gap-1 text-[9px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-1 py-0.2 rounded font-mono font-bold"
+                  >
+                    <Shield className="w-2.5 h-2.5 text-emerald-400" />
+                    JOVEM (10-17)
+                  </span>
+                ) : (
+                  <span
+                    title="Conta de Adulto Verificada (+18)"
+                    className="inline-flex items-center gap-1 text-[9px] bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 px-1 py-0.2 rounded font-mono font-bold"
+                  >
+                    <ShieldCheck className="w-2.5 h-2.5 text-cyan-400" />
+                    +18 VERIFICADO
+                  </span>
+                )}
+              </div>
+
               <div
                 onClick={(e) => {
                   e.stopPropagation();
                   if (onOpenPayment) onOpenPayment();
                 }}
                 title="Recarregar Moedas no Checkout Seguro (PIX / Cartão)"
-                className="flex items-center gap-1 text-[11px] text-amber-300 font-semibold hover:text-amber-200 transition cursor-pointer"
+                className="flex items-center gap-1 text-[11px] text-amber-300 font-semibold hover:text-amber-200 transition cursor-pointer mt-0.5"
               >
                 <Coins className="w-3 h-3 text-amber-400" />
                 <span>{user?.coins ?? 0} moedas</span>
@@ -310,27 +367,61 @@ export default function Sidebar({
             {/* Mic */}
             <button
               onClick={onToggleMic}
-              title={isMicMuted ? 'Desmutar Microfone' : 'Mutar Microfone'}
-              className={`p-1.5 rounded-md transition cursor-pointer ${
-                isMicMuted
+              title={
+                user?.isMinor
+                  ? 'Microfone Desativado (Modo Protegido 10-17 anos)'
+                  : isMicMuted
+                  ? 'Desmutar Microfone'
+                  : 'Mutar Microfone'
+              }
+              className={`p-1.5 rounded-md transition cursor-pointer relative ${
+                user?.isMinor
+                  ? 'bg-slate-800/80 text-slate-500 border border-slate-700/50'
+                  : isMicMuted
                   ? 'bg-red-500/20 text-red-400 hover:bg-red-500 hover:text-white'
                   : 'hover:bg-[#35373c] hover:text-white'
               }`}
             >
-              {isMicMuted ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+              {user?.isMinor ? (
+                <>
+                  <MicOff className="w-4 h-4 text-slate-500" />
+                  <Lock className="w-2.5 h-2.5 text-amber-400 absolute top-0.5 right-0.5" />
+                </>
+              ) : isMicMuted ? (
+                <MicOff className="w-4 h-4" />
+              ) : (
+                <Mic className="w-4 h-4" />
+              )}
             </button>
 
             {/* Vídeo */}
             <button
               onClick={onToggleVideo}
-              title={isVideoOff ? 'Ligar Câmera' : 'Desligar Câmera'}
-              className={`p-1.5 rounded-md transition cursor-pointer ${
-                isVideoOff
+              title={
+                user?.isMinor
+                  ? 'Webcam Desativada (Modo Protegido 10-17 anos)'
+                  : isVideoOff
+                  ? 'Ligar Câmera'
+                  : 'Desligar Câmera'
+              }
+              className={`p-1.5 rounded-md transition cursor-pointer relative ${
+                user?.isMinor
+                  ? 'bg-slate-800/80 text-slate-500 border border-slate-700/50'
+                  : isVideoOff
                   ? 'hover:bg-[#35373c] hover:text-white text-slate-400'
                   : 'bg-cyan-500/20 text-cyan-400 hover:bg-cyan-500 hover:text-white'
               }`}
             >
-              {isVideoOff ? <VideoOff className="w-4 h-4" /> : <Video className="w-4 h-4" />}
+              {user?.isMinor ? (
+                <>
+                  <VideoOff className="w-4 h-4 text-slate-500" />
+                  <Lock className="w-2.5 h-2.5 text-amber-400 absolute top-0.5 right-0.5" />
+                </>
+              ) : isVideoOff ? (
+                <VideoOff className="w-4 h-4" />
+              ) : (
+                <Video className="w-4 h-4" />
+              )}
             </button>
 
             {/* Loja */}

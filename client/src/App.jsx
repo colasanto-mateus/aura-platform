@@ -137,6 +137,19 @@ export default function App() {
       }
     });
 
+    // Alerta de moderação para linguagem explícita ou restrições de idade
+    socket.on('moderation-warning', ({ error }) => {
+      alert(error || 'Aviso de Proteção Aura: Conteúdo bloqueado por conter linguagem imprópria para a comunidade.');
+    });
+
+    // Atualização de canais criados em tempo real
+    socket.on('channel-created', (newChannel) => {
+      setChannels((prev) => {
+        if (prev.some((c) => c.id === newChannel.id)) return prev;
+        return [...prev, newChannel];
+      });
+    });
+
     return () => {
       socket.disconnect();
     };
@@ -201,7 +214,33 @@ export default function App() {
     setActiveVoiceChannel(channel);
     setCurrentChannel(channel);
 
-    // Solicita permissão para microfone e câmera
+    // Se o usuário for menor de idade (10 a 17 anos), BLOQUEIA microfone e webcam por proteção infantil
+    if (user?.isMinor) {
+      setIsMicMuted(true);
+      setIsVideoOff(true);
+      setLocalStream(null);
+
+      if (socketRef.current) {
+        socketRef.current.emit('voice-join', {
+          channelId: channel.id,
+          user: {
+            id: user?.id,
+            username: user?.username,
+            equippedAvatar: user?.equippedAvatar,
+            borderEffect: user?.borderEffect,
+            equippedColor: user?.equippedColor,
+            equippedFont: user?.equippedFont,
+            isMinor: true
+          },
+          isMuted: true,
+          isVideoOff: true,
+          isMinor: true
+        });
+      }
+      return;
+    }
+
+    // Solicita permissão para microfone e câmera (Apenas maiores de 18)
     let stream = null;
     try {
       stream = await navigator.mediaDevices.getUserMedia({
@@ -321,6 +360,10 @@ export default function App() {
 
   // 7. Controles de Mídia: Microfone e Câmera
   function handleToggleMic() {
+    if (user?.isMinor) {
+      alert('Recurso Protegido: O uso de microfone é desativado para contas de 10 a 17 anos por diretriz de segurança e proteção infantil.');
+      return;
+    }
     const nextState = !isMicMuted;
     setIsMicMuted(nextState);
     if (localStream) {
@@ -337,6 +380,10 @@ export default function App() {
   }
 
   function handleToggleVideo() {
+    if (user?.isMinor) {
+      alert('Recurso Protegido: O uso de webcam/câmera é desativado para contas de 10 a 17 anos por diretriz de segurança e proteção infantil.');
+      return;
+    }
     const nextState = !isVideoOff;
     setIsVideoOff(nextState);
     if (localStream) {

@@ -151,7 +151,11 @@ app.post('/api/auth/register-init', (req, res) => {
     return res.status(400).json({ error: 'Preencha todos os campos obrigatórios (E-mail, Usuário e Senha).' });
   }
 
-  // Validação Estrita de Maioridade (+18 Anos)
+  // Validação de Idade (Mínimo 10 anos)
+  let userAge = 18;
+  let isMinor = false;
+  let isAdult = true;
+
   if (birthDate) {
     const parts = birthDate.split('/');
     if (parts.length === 3) {
@@ -165,18 +169,21 @@ app.post('/api/auth/register-init', (req, res) => {
       if (m < 0 || (m === 0 && today.getDate() < bDate.getDate())) {
         calculatedAge--;
       }
-      if (calculatedAge < 18) {
+      userAge = calculatedAge;
+      if (calculatedAge < 10) {
         return res.status(403).json({
-          error: 'Acesso Proibido: A plataforma Aura é exclusiva para maiores de 18 anos.'
+          error: 'Acesso Proibido: A plataforma Aura é permitida apenas para pessoas a partir de 10 anos de idade.'
         });
       }
+      isMinor = calculatedAge < 18;
+      isAdult = calculatedAge >= 18;
     }
   }
 
-  // Validação de Reconhecimento Facial / Biometria de Idade
+  // Validação de Reconhecimento Facial / Biometria
   if (!biometricVerified) {
     return res.status(400).json({
-      error: 'Validação biométrica facial obrigatória para confirmar a maioridade (+18).'
+      error: 'Validação biométrica facial obrigatória para identificação da faixa etária e vivacidade.'
     });
   }
 
@@ -227,6 +234,10 @@ app.post('/api/auth/register-init', (req, res) => {
     username: cleanUsername,
     passwordHash,
     birthDate: birthDate || null,
+    userAge,
+    isMinor,
+    isAdult,
+    biometricVerified: true,
     code: verificationCode,
     expiresAt: Date.now() + 15 * 60 * 1000
   });
@@ -280,11 +291,15 @@ app.post('/api/auth/verify-code', (req, res) => {
     username: pending.username,
     passwordHash: pending.passwordHash,
     birthDate: pending.birthDate,
-    isAdult: true,
+    userAge: pending.userAge || 18,
+    isMinor: !!pending.isMinor,
+    isAdult: !pending.isMinor,
     biometricVerified: true,
     coins: 600, // Bônus de boas-vindas
     equippedAvatar: `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(pending.username)}&backgroundColor=1e1b4b`,
-    borderEffect: 'border-cyan-400 shadow-[0_0_10px_rgba(34,211,238,0.5)]',
+    borderEffect: pending.isMinor
+      ? 'border-emerald-400 shadow-[0_0_10px_rgba(52,211,153,0.6)]'
+      : 'border-cyan-400 shadow-[0_0_10px_rgba(34,211,238,0.5)]',
     equippedBackground: '',
     equippedColor: 'text-cyan-400 drop-shadow-[0_0_6px_rgba(34,211,238,0.7)]',
     equippedFont: "'Inter', sans-serif",
@@ -817,6 +832,67 @@ app.post('/api/wallet/recharge', authMiddleware, (req, res) => {
 // SOCKET.IO: CHAT EM TEMPO REAL & WEBRTC
 // ==========================================
 
+// ==========================================
+// FILTRO DE CONTEÚDO E PROTEÇÃO PARA MENORES DE IDADE
+// ==========================================
+
+const EXPLICIT_WORDS = [
+  'caralho', 'porra', 'foder', 'foda', 'puta', 'puto', 'vagabunda', 'buceta', 'carai',
+  'cu', 'filho da puta', 'arrombado', 'viado', 'cacete', 'piroca', 'pica', 'merda',
+  'bosta', 'chupa', 'fode', 'desgraca', 'foda-se', 'fuck', 'shit', 'bitch', 'asshole',
+  'cunt', 'dick', 'pussy', 'whore', 'bastard', 'motherfucker', 'sexo', 'nude', 'porn'
+];
+
+function sanitizeExplicitText(text) {
+  if (!text) return '';
+  let sanitized = text;
+  EXPLICIT_WORDS.forEach((badWord) => {
+    const regex = new RegExp(`\\b${badWord}\\b`, 'gi');
+    sanitized = sanitized.replace(regex, (match) => '*'.repeat(match.length));
+  });
+  return sanitized;
+}
+
+function hasExplicitLanguage(text) {
+  if (!text) return false;
+  return EXPLICIT_WORDS.some((badWord) => {
+    const regex = new RegExp(`\\b${badWord}\\b`, 'i');
+    return regex.test(text);
+  });
+}
+
+// Criação de Canais com Bloqueio Estrito para Menores
+app.post('/api/channels/create', authMiddleware, (req, res) => {
+  const db = getDB();
+  const user = db.users.find((u) => u.id === req.userId);
+  if (!user) return res.status(404).json({ error: 'Usuário não encontrado' });
+
+  if (user.isMinor) {
+    return res.status(403).json({
+      error: 'Recurso Bloqueado: Apenas contas de maiores de 18 anos têm permissão para criar salas e canais de bate-papo.'
+    });
+  }
+
+  const { name, type, description } = req.body;
+  if (!name || !name.trim()) {
+    return res.status(400).json({ error: 'Informe o nome do canal' });
+  }
+
+  const cleanName = name.trim().toLowerCase().replace(/[^a-z0-9_-]/g, '-');
+  const newChannel = {
+    id: `canal-${Date.now().toString(36)}`,
+    name: cleanName,
+    type: type === 'voice' ? 'voice' : 'text',
+    description: description ? description.trim() : 'Canal criado por membro verificado'
+  };
+
+  db.channels.push(newChannel);
+  saveDB(db);
+
+  io.emit('channel-created', newChannel);
+  return res.status(201).json({ channel: newChannel });
+});
+
 // Mapeamento de usuários conectados em salas de voz: { [channelId]: [ { socketId, user, isMuted, isVideoOff } ] }
 const voiceRooms = {};
 
@@ -836,12 +912,24 @@ io.on('connection', (socket) => {
     const db = getDB();
     const user = db.users.find((u) => u.id === userId);
 
+    // Se o usuário for menor de idade e enviar linguajar explícito, bloqueia a mensagem
+    if (user?.isMinor && hasExplicitLanguage(content)) {
+      socket.emit('moderation-warning', {
+        error: 'Sua mensagem foi bloqueada pelo Filtro de Proteção Aura: contas de menores de 18 anos não podem enviar linguagem explícita ou termos impróprios.'
+      });
+      return;
+    }
+
+    // Sanitiza qualquer palavra explícita nas mensagens com asteriscos (****)
+    const sanitizedContent = sanitizeExplicitText(content.trim());
+
     const message = {
       id: uuidv4(),
       channelId,
       userId: user ? user.id : 'anon',
       username: user ? user.username : 'Convidado',
-      content: content.trim(),
+      isMinor: !!user?.isMinor,
+      content: sanitizedContent,
       userColor: user ? user.equippedColor : 'text-slate-100',
       userFont: user ? user.equippedFont : "'Inter', sans-serif",
       userAvatar: user

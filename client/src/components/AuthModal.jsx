@@ -73,9 +73,9 @@ export default function AuthModal({ isOpen }) {
   ];
 
   const currentYear = new Date().getFullYear();
-  // Mostra apenas anos a partir de 18 anos atrás (garante que maiores de idade se cadastrem)
-  const maxBirthYear = currentYear - 18;
-  const years = Array.from({ length: 70 }, (_, i) => maxBirthYear - i);
+  // Permite cadastros a partir de 10 anos de idade
+  const maxBirthYear = currentYear - 10;
+  const years = Array.from({ length: 80 }, (_, i) => maxBirthYear - i);
   const days = Array.from({ length: 31 }, (_, i) => i + 1);
 
   // Temporizador para reenvio de e-mail (30s)
@@ -195,8 +195,8 @@ export default function AuthModal({ isOpen }) {
       calculatedAge--;
     }
 
-    if (calculatedAge < 18) {
-      setError('Acesso Proibido: A plataforma Aura é exclusiva para maiores de 18 anos.');
+    if (calculatedAge < 10) {
+      setError('Acesso Proibido: A plataforma Aura é permitida apenas para maiores de 10 anos.');
       return;
     }
 
@@ -205,7 +205,7 @@ export default function AuthModal({ isOpen }) {
       return;
     }
 
-    // Avança para o Reconhecimento Facial de Maioridade
+    // Avança para o Reconhecimento Facial de Faixa Etária
     setBiometricVerified(false);
     setBiometricScanning(false);
     setBiometricStep('Posicione o rosto dentro da moldura oval');
@@ -232,8 +232,15 @@ export default function AuthModal({ isOpen }) {
           calculatedAge--;
         }
 
+        const isUserMinor = calculatedAge < 18;
         setBiometricAge(calculatedAge);
-        setBiometricStep(`3/3: Idade estimada: ${calculatedAge} anos • MAIORIDADE CONFIRMADA (+18)`);
+
+        if (isUserMinor) {
+          setBiometricStep(`3/3: Idade estimada: ${calculatedAge} anos • CONTA JOVEM (10-17 ANOS) DETECTADA [MODO PROTEGIDO ATIVADO]`);
+        } else {
+          setBiometricStep(`3/3: Idade estimada: ${calculatedAge} anos • MAIORIDADE CONFIRMADA (+18 ACESSO COMPLETO)`);
+        }
+
         setBiometricVerified(true);
         setBiometricScanning(false);
 
@@ -251,7 +258,9 @@ export default function AuthModal({ isOpen }) {
               birthDate: birthDateStr,
               captchaVerified: true,
               biometricVerified: true,
-              biometricAge: calculatedAge
+              biometricAge: calculatedAge,
+              isMinor: isUserMinor,
+              isAdult: !isUserMinor
             });
 
             setViewMode('verify_email');
@@ -263,7 +272,7 @@ export default function AuthModal({ isOpen }) {
           } finally {
             setLoading(false);
           }
-        }, 1200);
+        }, 1300);
       }, 1200);
     }, 1000);
   }
@@ -368,12 +377,12 @@ export default function AuthModal({ isOpen }) {
               <h2 className="text-2xl font-black tracking-wider text-white font-orbitron">
                 CRIAR CONTA AURA
               </h2>
-              <span className="bg-red-500/20 text-red-300 border border-red-500/40 text-[10px] font-black uppercase px-2 py-0.5 rounded-full font-mono">
-                +18 ANOS
+              <span className="bg-indigo-500/20 text-indigo-300 border border-indigo-500/40 text-[10px] font-black uppercase px-2 py-0.5 rounded-full font-mono">
+                10+ ANOS
               </span>
             </div>
             <p className="text-xs text-slate-400 mt-1">
-              Plataforma profissional e acadêmica com validação de maioridade
+              Comunicação para estudo e trabalho com proteção especial para menores
             </p>
           </div>
 
@@ -476,7 +485,7 @@ export default function AuthModal({ isOpen }) {
                   <Calendar className="w-3.5 h-3.5 text-indigo-400" />
                   <span>Data de Nascimento</span> <span className="text-cyan-400">*</span>
                 </label>
-                <span className="text-[10px] text-amber-400 font-semibold">Obrigatório 18+</span>
+                <span className="text-[10px] text-cyan-400 font-semibold">Mínimo 10 anos</span>
               </div>
 
               <div className="grid grid-cols-3 gap-2">
@@ -570,7 +579,7 @@ export default function AuthModal({ isOpen }) {
               className="w-full py-3.5 mt-2 bg-gradient-to-r from-indigo-600 via-purple-600 to-cyan-500 hover:from-indigo-500 hover:via-purple-500 hover:to-cyan-400 active:scale-[0.99] text-white font-bold text-sm rounded-xl shadow-lg shadow-indigo-600/30 transition-all cursor-pointer flex items-center justify-center gap-2"
             >
               <Scan className="w-4 h-4 text-cyan-300" />
-              <span>Avançar para Reconhecimento Facial (+18)</span>
+              <span>Avançar para Reconhecimento Facial & Idade</span>
             </button>
           </form>
 
@@ -588,7 +597,7 @@ export default function AuthModal({ isOpen }) {
       )}
 
       {/* ======================================================== */}
-      {/* 2. RECONHECIMENTO FACIAL & VALIDAÇÃO DE MAIORIDADE (+18) */}
+      {/* 2. RECONHECIMENTO FACIAL & IDENTIFICAÇÃO DE FAIXA ETÁRIA */}
       {/* ======================================================== */}
       {viewMode === 'biometric_scan' && (
         <div className="relative w-full max-w-[500px] bg-[#0f111a]/95 backdrop-blur-2xl border border-cyan-500/35 rounded-3xl shadow-[0_0_60px_rgba(34,211,238,0.22)] p-7 sm:p-8 z-10 text-white my-auto animate-in zoom-in-95 duration-200">
@@ -611,7 +620,7 @@ export default function AuthModal({ isOpen }) {
               RECONHECIMENTO FACIAL
             </h3>
             <p className="text-xs text-slate-400 mt-1 max-w-xs mx-auto">
-              Validação biométrica e estimativa de idade em tempo real para garantir o acesso exclusivo a maiores de 18 anos
+              Identificação biométrica e faixa etária (Modo Protegido 10 a 17 anos ou Acesso Adulto +18)
             </p>
           </div>
 
@@ -668,16 +677,27 @@ export default function AuthModal({ isOpen }) {
             {/* Status no Topo do Visor */}
             <div className="absolute top-3 left-3 bg-[#0c0d15]/80 backdrop-blur-md border border-cyan-500/30 px-2.5 py-1 rounded-full text-[10px] font-mono font-bold text-cyan-300 flex items-center gap-1.5">
               <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping" />
-              <span>AURA BIOMETRIC ID • +18</span>
+              <span>AURA BIOMETRIC ID • 10+</span>
             </div>
           </div>
 
           {/* Feedback de Etapa e Estimativa de Idade */}
           <div className="bg-[#161824] border border-slate-700/80 rounded-xl p-3 text-center mb-5 font-mono text-xs text-slate-300">
             {biometricVerified ? (
-              <div className="text-emerald-400 font-bold flex items-center justify-center gap-1.5">
-                <ShieldCheck className="w-4 h-4 text-emerald-400" />
-                <span>Maioridade Confirmada (+18 Aprovado)</span>
+              <div className="text-emerald-400 font-bold flex flex-col items-center justify-center gap-1">
+                <div className="flex items-center gap-1.5">
+                  <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                  <span>
+                    {biometricAge < 18
+                      ? `Verificação Concluída: Conta Jovem Protegida (${biometricAge} anos)`
+                      : `Verificação Concluída: Maior de Idade (${biometricAge} anos)`}
+                  </span>
+                </div>
+                {biometricAge < 18 && (
+                  <span className="text-[10px] text-amber-300 font-sans font-normal">
+                    🛡️ Proteção ativa: webcam, áudio e criação de salas restritos.
+                  </span>
+                )}
               </div>
             ) : (
               <div className="text-slate-300 flex items-center justify-center gap-2">
@@ -700,17 +720,17 @@ export default function AuthModal({ isOpen }) {
               {biometricScanning ? (
                 <>
                   <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  <span>Escaneando e Analisando Idade...</span>
+                  <span>Escaneando e Analisando Faixa Etária...</span>
                 </>
               ) : biometricVerified ? (
                 <>
                   <Check className="w-4 h-4 text-emerald-300 stroke-[3]" />
-                  <span>Reconhecimento Aprovado (+18)!</span>
+                  <span>Biometria Aprovada! Enviando código...</span>
                 </>
               ) : (
                 <>
                   <Scan className="w-4 h-4 text-cyan-300" />
-                  <span>Escanear Meu Rosto & Confirmar Maioridade</span>
+                  <span>Escanear Meu Rosto & Confirmar Cadastro</span>
                 </>
               )}
             </button>

@@ -378,6 +378,22 @@ function initDB() {
       }
     });
 
+    // Sanitiza e atualiza mensagens antigas com referências a Discord ou Nexus
+    if (data.messages && Array.isArray(data.messages)) {
+      data.messages = data.messages.map((m) => {
+        if (m.username === 'Nexus Bot' || (m.content && m.content.includes('Discord')) || (m.content && m.content.includes('Nexus'))) {
+          return {
+            ...m,
+            username: 'Aura',
+            content: 'Boas-vindas à comunidade Aura! Conecte-se com seus colegas em canais temáticos de estudo, direito, medicina e tecnologia, participe de salas de foco e explore a Loja de Customizações para desbloquear avatares exclusivos, fundos, cores e fontes.',
+            userAvatar: 'https://api.dicebear.com/7.x/bottts/svg?seed=AuraOfficial&backgroundColor=4f46e5',
+            borderEffect: 'border-indigo-400 shadow-[0_0_12px_rgba(99,102,241,0.7)]'
+          };
+        }
+        return m;
+      });
+    }
+
     // Mescla novos itens da loja
     DEFAULT_STORE_ITEMS.forEach((defItem) => {
       const idx = data.storeItems.findIndex((s) => s.id === defItem.id);

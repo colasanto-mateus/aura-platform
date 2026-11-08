@@ -124,6 +124,20 @@ export default function ChatArea({
                     {m.username}
                   </span>
 
+                  {m.isMinor ? (
+                    <span className="text-[9px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-1.5 py-0.2 rounded font-mono font-bold">
+                      🛡️ JOVEM (10-17)
+                    </span>
+                  ) : m.userId !== 'system' ? (
+                    <span className="text-[9px] bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 px-1.5 py-0.2 rounded font-mono font-bold">
+                      🛡️ +18
+                    </span>
+                  ) : (
+                    <span className="text-[9px] bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 px-1.5 py-0.2 rounded font-mono font-bold">
+                      OFICIAL AURA
+                    </span>
+                  )}
+
                   {isMe && (
                     <span className="text-[10px] bg-indigo-500/20 text-indigo-300 px-1.5 py-0.2 rounded font-medium">
                       Você
@@ -214,6 +228,14 @@ export default function ChatArea({
             <Send className="w-4 h-4" />
           </button>
         </form>
+
+        {/* Notificação de Proteção para Menores */}
+        {user?.isMinor && (
+          <div className="mt-2 flex items-center gap-1.5 text-[11px] text-emerald-400 font-medium px-2">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+            <span>Filtro de Proteção Infantil Aura ativo: Termos e linguagem explícita são filtrados automaticamente.</span>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -94,12 +94,23 @@ export default function ProfileModal({ isOpen, onClose, onOpenStore }) {
           </div>
 
           <div>
-            <h3
-              className={`text-xl font-bold ${user?.equippedColor || 'text-white'}`}
-              style={{ fontFamily: user?.equippedFont || 'inherit' }}
-            >
-              {user?.username}
-            </h3>
+            <div className="flex items-center gap-2 flex-wrap">
+              <h3
+                className={`text-xl font-bold ${user?.equippedColor || 'text-white'}`}
+                style={{ fontFamily: user?.equippedFont || 'inherit' }}
+              >
+                {user?.username}
+              </h3>
+              {user?.isMinor ? (
+                <span className="text-[10px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 px-2 py-0.5 rounded-full font-mono font-bold">
+                  🛡️ CONTA JOVEM (10-17 ANOS) • MODO PROTEGIDO
+                </span>
+              ) : (
+                <span className="text-[10px] bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 px-2 py-0.5 rounded-full font-mono font-bold">
+                  🛡️ MAIORIDADE VERIFICADA (+18)
+                </span>
+              )}
+            </div>
             <p className="text-xs text-slate-400 mt-0.5">{user?.email}</p>
           </div>
 
