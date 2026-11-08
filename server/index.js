@@ -16,18 +16,23 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Transporter Nodemailer (configurável via variáveis de ambiente)
-let mailTransporter = null;
-if (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS) {
-  mailTransporter = nodemailer.createTransport({
-    host: process.env.SMTP_HOST,
-    port: parseInt(process.env.SMTP_PORT || '465', 10),
-    secure: process.env.SMTP_SECURE ? process.env.SMTP_SECURE === 'true' : parseInt(process.env.SMTP_PORT || '465', 10) === 465,
-    auth: {
-      user: process.env.SMTP_USER,
-      pass: process.env.SMTP_PASS
-    }
-  });
+function getMailTransporter() {
+  if (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS) {
+    return nodemailer.createTransport({
+      host: process.env.SMTP_HOST,
+      port: parseInt(process.env.SMTP_PORT || '465', 10),
+      secure: process.env.SMTP_SECURE ? process.env.SMTP_SECURE === 'true' : parseInt(process.env.SMTP_PORT || '465', 10) === 465,
+      auth: {
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASS
+      }
+    });
+  }
+  return null;
+}
+
+let mailTransporter = getMailTransporter();
+if (mailTransporter) {
   console.log('📧 Serviço de E-mail SMTP configurado com sucesso!');
 } else {
   console.log('⚠️ Variáveis SMTP não configuradas. Configure SMTP_HOST, SMTP_USER e SMTP_PASS nas variáveis da Railway para envio real à caixa de entrada.');
@@ -72,22 +77,29 @@ async function sendVerificationEmail(email, code) {
     </html>
   `;
 
-  if (mailTransporter) {
+  const activeTransporter = mailTransporter || getMailTransporter();
+
+  if (activeTransporter) {
     try {
-      await mailTransporter.sendMail({
+      await activeTransporter.sendMail({
         from: process.env.SMTP_FROM || `"Aura Segurança" <${process.env.SMTP_USER}>`,
         to: email,
         subject: mailSubject,
         html: mailHtml
       });
-      console.log(`[E-mail Enviado com Sucesso] Código enviado para a caixa de entrada de ${email}`);
+      console.log(`[E-mail Enviado com Sucesso] Código enviado diretamente para a caixa de entrada de ${email}`);
     } catch (err) {
       console.error('[Falha no Envio de E-mail SMTP]', err);
     }
   } else {
     console.log(`\n======================================================`);
-    console.log(`[Aura Notificação] Código enviado para ${email}: ${code}`);
-    console.log(`[Aura Aviso] Para que o e-mail chegue diretamente à caixa de entrada do usuário em produção, adicione SMTP_HOST, SMTP_USER e SMTP_PASS nas variáveis da Railway.`);
+    console.log(`🔑 [CÓDIGO DE VERIFICAÇÃO GERADO PARA: ${email}]`);
+    console.log(`👉 CÓDIGO: ${code} 👈`);
+    console.log(`(Este código é válido por 15 minutos)`);
+    console.log(`⚠️ ATENÇÃO: As variáveis de e-mail SMTP ainda não foram preenchidas no painel da Railway.`);
+    console.log(`Para que os e-mails cheguem à sua Caixa de Entrada do Gmail:`);
+    console.log(`Adicione em Railway > Variables:`);
+    console.log(`SMTP_HOST = smtp.gmail.com | SMTP_PORT = 465 | SMTP_USER = seu-email | SMTP_PASS = senha-de-app-16-letras`);
     console.log(`======================================================\n`);
   }
 }
@@ -125,9 +137,9 @@ function authMiddleware(req, res, next) {
 // ROTAS DE AUTENTICAÇÃO COM ALTA SEGURANÇA
 // ==========================================
 
-// 1. Etapa 1 do Cadastro: Validação dos dados + Captcha + Envio do Código por E-mail
+// 1. Etapa 1 do Cadastro: Validação dos dados + Captcha + Biometria Facial + Envio do Código por E-mail
 app.post('/api/auth/register-init', (req, res) => {
-  const { email, displayName, username, password, birthDate, captchaVerified } = req.body;
+  const { email, displayName, username, password, birthDate, captchaVerified, biometricVerified, biometricAge } = req.body;
 
   // Validação do Captcha Anti-Bot
   if (!captchaVerified) {
@@ -137,6 +149,35 @@ app.post('/api/auth/register-init', (req, res) => {
   // Validação dos Campos Obrigatórios
   if (!email || !username || !password) {
     return res.status(400).json({ error: 'Preencha todos os campos obrigatórios (E-mail, Usuário e Senha).' });
+  }
+
+  // Validação Estrita de Maioridade (+18 Anos)
+  if (birthDate) {
+    const parts = birthDate.split('/');
+    if (parts.length === 3) {
+      const day = parseInt(parts[0], 10);
+      const month = parseInt(parts[1], 10) - 1;
+      const year = parseInt(parts[2], 10);
+      const bDate = new Date(year, month, day);
+      const today = new Date();
+      let calculatedAge = today.getFullYear() - bDate.getFullYear();
+      const m = today.getMonth() - bDate.getMonth();
+      if (m < 0 || (m === 0 && today.getDate() < bDate.getDate())) {
+        calculatedAge--;
+      }
+      if (calculatedAge < 18) {
+        return res.status(403).json({
+          error: 'Acesso Proibido: A plataforma Aura é exclusiva para maiores de 18 anos.'
+        });
+      }
+    }
+  }
+
+  // Validação de Reconhecimento Facial / Biometria de Idade
+  if (!biometricVerified) {
+    return res.status(400).json({
+      error: 'Validação biométrica facial obrigatória para confirmar a maioridade (+18).'
+    });
   }
 
   const cleanEmail = email.trim().toLowerCase();
@@ -239,6 +280,8 @@ app.post('/api/auth/verify-code', (req, res) => {
     username: pending.username,
     passwordHash: pending.passwordHash,
     birthDate: pending.birthDate,
+    isAdult: true,
+    biometricVerified: true,
     coins: 600, // Bônus de boas-vindas
     equippedAvatar: `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(pending.username)}&backgroundColor=1e1b4b`,
     borderEffect: 'border-cyan-400 shadow-[0_0_10px_rgba(34,211,238,0.5)]',
