@@ -1,0 +1,45 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-[#1e1f22] text-[#dbdee1] font-sans antialiased overflow-hidden;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+
+  /* Custom Slim Scrollbar Discord-like */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: #2b2d31;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #1a1b1e;
+    border-radius: 3px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #111214;
+  }
+}
+
+.custom-bg-overlay {
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+@keyframes pulseGlow {
+  0%, 100% {
+    filter: drop-shadow(0 0 4px rgba(34, 211, 238, 0.4));
+  }
+  50% {
+    filter: drop-shadow(0 0 12px rgba(34, 211, 238, 0.9));
+  }
+}
+
+.animate-glow {
+  animation: pulseGlow 2.5s infinite ease-in-out;
+}
