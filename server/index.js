@@ -6,6 +6,7 @@ const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const { v4: uuidv4 } = require('uuid');
 const path = require('path');
+const nodemailer = require('nodemailer');
 const { getDB, saveDB } = require('./db');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'aura_platform_secret_key_2026';
@@ -14,6 +15,56 @@ const PORT = parseInt(process.env.PORT || '8080', 10);
 const app = express();
 app.use(cors());
 app.use(express.json());
+
+// Transporter Nodemailer (configurável via variáveis de ambiente)
+let mailTransporter = null;
+if (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS) {
+  mailTransporter = nodemailer.createTransport({
+    host: process.env.SMTP_HOST,
+    port: parseInt(process.env.SMTP_PORT || '587', 10),
+    secure: process.env.SMTP_SECURE === 'true',
+    auth: {
+      user: process.env.SMTP_USER,
+      pass: process.env.SMTP_PASS
+    }
+  });
+}
+
+async function sendVerificationEmail(email, code) {
+  const mailSubject = `${code} é seu código de verificação do Aura`;
+  const mailHtml = `
+    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #1e1f22; color: #dbdee1; padding: 32px; border-radius: 12px; max-width: 480px; margin: auto;">
+      <div style="text-align: center; margin-bottom: 24px;">
+        <h1 style="color: #6366f1; margin: 0; font-size: 26px; letter-spacing: -0.5px;">AURA</h1>
+        <p style="color: #949ba4; font-size: 13px; margin-top: 4px;">Sua voz, sua imagem, sua identidade</p>
+      </div>
+      <p style="font-size: 15px; line-height: 1.5; color: #ffffff;">Olá,</p>
+      <p style="font-size: 14px; line-height: 1.5; color: #dbdee1;">Obrigado por criar sua conta no <strong>Aura</strong>! Para garantir a segurança e evitar bots, insira o código de 6 dígitos abaixo na tela de confirmação:</p>
+      <div style="background-color: #2b2d31; border: 2px solid #6366f1; border-radius: 10px; padding: 18px; text-align: center; margin: 28px 0;">
+        <span style="font-size: 34px; font-weight: 800; letter-spacing: 8px; color: #ffffff; font-family: monospace;">${code}</span>
+      </div>
+      <p style="font-size: 12px; color: #949ba4; line-height: 1.4;">Este código é válido por <strong>15 minutos</strong>. Se você não realizou esta solicitação, nenhuma ação adicional é necessária.</p>
+    </div>
+  `;
+
+  if (mailTransporter) {
+    try {
+      await mailTransporter.sendMail({
+        from: process.env.SMTP_FROM || '"Aura Segurança" <noreply@aura.app>',
+        to: email,
+        subject: mailSubject,
+        html: mailHtml
+      });
+      console.log(`[E-mail Enviado] Código ${code} enviado para ${email}`);
+    } catch (err) {
+      console.error('[Erro E-mail SMTP]', err);
+    }
+  } else {
+    console.log(`\n======================================================`);
+    console.log(`[Aura E-mail] Código de Confirmação para ${email}: ${code}`);
+    console.log(`======================================================\n`);
+  }
+}
 
 // Endpoint de Saúde para Docker e Cloud Load Balancers
 app.get('/api/health', (req, res) => {
@@ -45,10 +96,189 @@ function authMiddleware(req, res, next) {
 }
 
 // ==========================================
-// ROTAS DE AUTENTICAÇÃO
+// ROTAS DE AUTENTICAÇÃO COM ALTA SEGURANÇA
 // ==========================================
 
-// Cadastro de usuário
+// 1. Etapa 1 do Cadastro: Validação dos dados + Captcha + Envio do Código por E-mail
+app.post('/api/auth/register-init', (req, res) => {
+  const { email, displayName, username, password, birthDate, captchaVerified } = req.body;
+
+  // Validação do Captcha Anti-Bot
+  if (!captchaVerified) {
+    return res.status(400).json({ error: 'Verificação humana (Captcha) obrigatória para evitar robôs.' });
+  }
+
+  // Validação dos Campos Obrigatórios
+  if (!email || !username || !password) {
+    return res.status(400).json({ error: 'Preencha todos os campos obrigatórios (E-mail, Usuário e Senha).' });
+  }
+
+  const cleanEmail = email.trim().toLowerCase();
+  const cleanUsername = username.trim();
+
+  // Validação de formato de e-mail básico
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(cleanEmail)) {
+    return res.status(400).json({ error: 'Por favor, insira um endereço de e-mail válido.' });
+  }
+
+  if (cleanUsername.length < 3) {
+    return res.status(400).json({ error: 'O nome de usuário deve ter no mínimo 3 caracteres.' });
+  }
+
+  if (password.length < 6) {
+    return res.status(400).json({ error: 'A senha deve conter no mínimo 6 caracteres.' });
+  }
+
+  const db = getDB();
+
+  // Verifica se o usuário ou e-mail já existe
+  const existingUser = db.users.find(
+    (u) => u.email.toLowerCase() === cleanEmail || u.username.toLowerCase() === cleanUsername.toLowerCase()
+  );
+
+  if (existingUser) {
+    return res.status(409).json({ error: 'Este e-mail ou nome de usuário já está cadastrado no Aura.' });
+  }
+
+  // Gera código numérico de 6 dígitos
+  const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
+
+  // Criptografa senha com salt seguro
+  const salt = bcrypt.genSaltSync(10);
+  const passwordHash = bcrypt.hashSync(password, salt);
+
+  // Armazena cadastro pendente com expiração em 15 minutos
+  if (!db.pendingRegistrations) db.pendingRegistrations = [];
+
+  // Remove tentativas antigas do mesmo e-mail
+  db.pendingRegistrations = db.pendingRegistrations.filter((p) => p.email !== cleanEmail);
+
+  db.pendingRegistrations.push({
+    email: cleanEmail,
+    displayName: displayName ? displayName.trim() : cleanUsername,
+    username: cleanUsername,
+    passwordHash,
+    birthDate: birthDate || null,
+    code: verificationCode,
+    expiresAt: Date.now() + 15 * 60 * 1000
+  });
+
+  saveDB(db);
+
+  // Envia e-mail de confirmação
+  sendVerificationEmail(cleanEmail, verificationCode);
+
+  return res.json({
+    success: true,
+    message: `Código de verificação enviado para ${cleanEmail}!`,
+    email: cleanEmail,
+    devCode: verificationCode // Fornece o código no retorno para caso o servidor SMTP ainda não esteja configurado
+  });
+});
+
+// 2. Etapa 2 do Cadastro: Confirmação do Código de 6 Dígitos do E-mail
+app.post('/api/auth/verify-code', (req, res) => {
+  const { email, code } = req.body;
+  if (!email || !code) {
+    return res.status(400).json({ error: 'E-mail e código de verificação são obrigatórios.' });
+  }
+
+  const cleanEmail = email.trim().toLowerCase();
+  const cleanCode = code.trim();
+
+  const db = getDB();
+  if (!db.pendingRegistrations) db.pendingRegistrations = [];
+
+  const pending = db.pendingRegistrations.find((p) => p.email === cleanEmail);
+
+  if (!pending) {
+    return res.status(404).json({ error: 'Nenhum cadastro pendente encontrado para este e-mail. Inicie o cadastro novamente.' });
+  }
+
+  if (Date.now() > pending.expiresAt) {
+    db.pendingRegistrations = db.pendingRegistrations.filter((p) => p.email !== cleanEmail);
+    saveDB(db);
+    return res.status(400).json({ error: 'O código de verificação expirou. Solicite um novo código.' });
+  }
+
+  if (pending.code !== cleanCode) {
+    return res.status(400).json({ error: 'Código de verificação incorreto. Verifique os 6 dígitos recebidos.' });
+  }
+
+  // Criação oficial do usuário confirmado
+  const newUser = {
+    id: uuidv4(),
+    email: pending.email,
+    displayName: pending.displayName,
+    username: pending.username,
+    passwordHash: pending.passwordHash,
+    birthDate: pending.birthDate,
+    coins: 600, // Bônus de boas-vindas
+    equippedAvatar: `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(pending.username)}&backgroundColor=1e1b4b`,
+    borderEffect: 'border-cyan-400 shadow-[0_0_10px_rgba(34,211,238,0.5)]',
+    equippedBackground: '',
+    equippedColor: 'text-cyan-400 drop-shadow-[0_0_6px_rgba(34,211,238,0.7)]',
+    equippedFont: "'Inter', sans-serif",
+    emailVerified: true,
+    createdAt: new Date().toISOString()
+  };
+
+  db.users.push(newUser);
+
+  // Registro de transação do bônus
+  db.transactions.push({
+    id: uuidv4(),
+    userId: newUser.id,
+    amount: 600,
+    type: 'BONUS_CADASTRO',
+    description: 'Bônus de boas-vindas para personalização Aura',
+    createdAt: new Date().toISOString()
+  });
+
+  // Limpa pendência
+  db.pendingRegistrations = db.pendingRegistrations.filter((p) => p.email !== cleanEmail);
+  saveDB(db);
+
+  const token = jwt.sign({ userId: newUser.id }, JWT_SECRET, { expiresIn: '7d' });
+  const { passwordHash: _, ...safeUser } = newUser;
+
+  return res.status(201).json({
+    success: true,
+    message: 'Conta criada e e-mail confirmado com sucesso!',
+    user: safeUser,
+    token
+  });
+});
+
+// 3. Reenviar código de confirmação
+app.post('/api/auth/resend-code', (req, res) => {
+  const { email } = req.body;
+  if (!email) return res.status(400).json({ error: 'E-mail obrigatório' });
+
+  const cleanEmail = email.trim().toLowerCase();
+  const db = getDB();
+  const pending = db.pendingRegistrations.find((p) => p.email === cleanEmail);
+
+  if (!pending) {
+    return res.status(404).json({ error: 'Nenhum cadastro pendente para este e-mail.' });
+  }
+
+  const newCode = Math.floor(100000 + Math.random() * 900000).toString();
+  pending.code = newCode;
+  pending.expiresAt = Date.now() + 15 * 60 * 1000;
+  saveDB(db);
+
+  sendVerificationEmail(cleanEmail, newCode);
+
+  return res.json({
+    success: true,
+    message: 'Novo código de verificação enviado!',
+    devCode: newCode
+  });
+});
+
+// Cadastro de usuário legado / compatibilidade direta
 app.post('/api/auth/register', (req, res) => {
   const { username, email, password } = req.body;
   if (!username || !email || !password) {

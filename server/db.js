@@ -219,7 +219,7 @@ const DEFAULT_STORE_ITEMS = [
 ];
 
 const DEFAULT_CHANNELS = [
-  { id: 'canal-geral', name: 'geral', type: 'text', description: 'Canal de texto principal para conversar sobre tudo' },
+  { id: 'canal-geral', name: 'geral', type: 'text', description: 'Canal de texto principal para conversar com a comunidade' },
   { id: 'canal-jogos', name: 'jogos-e-animes', type: 'text', description: 'Discussões de games, clipes e novidades' },
   { id: 'canal-musica', name: 'musica-e-memes', type: 'text', description: 'Compartilhe suas músicas e memes favoritos' },
   { id: 'voz-geral', name: 'Voz & Câmera Geral', type: 'voice', description: 'Canal de voz aberto com suporte a webcam' },
@@ -231,18 +231,19 @@ function initDB() {
   if (!fs.existsSync(DB_FILE)) {
     const initialData = {
       users: [],
+      pendingRegistrations: [],
       channels: DEFAULT_CHANNELS,
       messages: [
         {
           id: 'welcome-1',
           channelId: 'canal-geral',
           userId: 'system',
-          username: 'Aura Bot 🤖',
-          content: 'Bem-vindo ao Aura! Aqui você pode conversar por texto, abrir sua câmera e microfone nas salas de voz, e explorar a Loja de Customização para desbloquear novos bonequinhos, fundos, cores e fontes!',
-          userColor: 'text-cyan-400 font-bold drop-shadow-[0_0_8px_rgba(6,182,212,0.8)]',
-          userFont: "'Orbitron', sans-serif",
-          userAvatar: 'https://api.dicebear.com/7.x/bottts/svg?seed=AuraBot&backgroundColor=06b6d4',
-          borderEffect: 'border-cyan-400 shadow-[0_0_12px_rgba(6,182,212,0.7)]',
+          username: 'Aura',
+          content: 'Boas-vindas à comunidade Aura! Conecte-se com seus amigos em salas de voz e vídeo HD, participe dos canais de texto e explore a Loja de Customizações para desbloquear avatares exclusivos, fundos, cores e fontes.',
+          userColor: 'text-indigo-400 font-bold drop-shadow-[0_0_8px_rgba(99,102,241,0.8)]',
+          userFont: "'Inter', sans-serif",
+          userAvatar: 'https://api.dicebear.com/7.x/bottts/svg?seed=AuraOfficial&backgroundColor=4f46e5',
+          borderEffect: 'border-indigo-400 shadow-[0_0_12px_rgba(99,102,241,0.7)]',
           createdAt: new Date().toISOString()
         }
       ],
@@ -255,7 +256,9 @@ function initDB() {
   }
   try {
     const content = fs.readFileSync(DB_FILE, 'utf-8');
-    return JSON.parse(content);
+    const data = JSON.parse(content);
+    if (!data.pendingRegistrations) data.pendingRegistrations = [];
+    return data;
   } catch (err) {
     console.error('Erro ao ler DB, recriando...', err);
     return null;

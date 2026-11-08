@@ -4,7 +4,7 @@ const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
-  const [token, setToken] = useState(() => localStorage.getItem('nexus_token'));
+  const [token, setToken] = useState(() => localStorage.getItem('aura_token') || localStorage.getItem('nexus_token'));
   const [inventory, setInventory] = useState([]);
   const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -51,29 +51,59 @@ export function AuthProvider({ children }) {
     if (!res.ok) {
       throw new Error(data.error || 'Erro ao realizar login');
     }
-    localStorage.setItem('nexus_token', data.token);
+    localStorage.setItem('aura_token', data.token);
     setToken(data.token);
     setUser(data.user);
     return data;
   }
 
-  async function register(username, email, password) {
-    const res = await fetch('/api/auth/register', {
+  // Etapa 1 do Cadastro Seguro: Validação + Captcha + Envio de E-mail
+  async function registerInit(formData) {
+    const res = await fetch('/api/auth/register-init', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username, email, password })
+      body: JSON.stringify(formData)
     });
     const data = await res.json();
     if (!res.ok) {
-      throw new Error(data.error || 'Erro ao criar conta');
+      throw new Error(data.error || 'Erro ao processar cadastro');
     }
-    localStorage.setItem('nexus_token', data.token);
+    return data;
+  }
+
+  // Etapa 2 do Cadastro Seguro: Confirmação do código de 6 dígitos
+  async function verifyEmailCode(email, code) {
+    const res = await fetch('/api/auth/verify-code', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, code })
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      throw new Error(data.error || 'Código incorreto ou expirado');
+    }
+    localStorage.setItem('aura_token', data.token);
     setToken(data.token);
     setUser(data.user);
+    return data;
+  }
+
+  // Reenviar código de verificação
+  async function resendCode(email) {
+    const res = await fetch('/api/auth/resend-code', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email })
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      throw new Error(data.error || 'Erro ao reenviar código');
+    }
     return data;
   }
 
   function logout() {
+    localStorage.removeItem('aura_token');
     localStorage.removeItem('nexus_token');
     setToken(null);
     setUser(null);
@@ -145,7 +175,9 @@ export function AuthProvider({ children }) {
         transactions,
         loading,
         login,
-        register,
+        registerInit,
+        verifyEmailCode,
+        resendCode,
         logout,
         buyItem,
         equipItem,

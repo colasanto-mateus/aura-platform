@@ -1,25 +1,12 @@
 {
-  "users": [
-    {
-      "id": "3e52985f-8b61-4759-b3b5-a47b7102a6c8",
-      "username": "Player1",
-      "email": "p1@nexus.com",
-      "passwordHash": "$2b$10$BBdmd1hu362L9Q6Gwkp2M.JIxLk0AYcfquRMAGVVmLThVC.JC4oc2",
-      "coins": 950,
-      "equippedAvatar": "https://api.dicebear.com/7.x/bottts/svg?seed=CyberNinja&backgroundColor=1e1b4b",
-      "borderEffect": "border-cyan-400 shadow-[0_0_15px_rgba(34,211,238,0.7)]",
-      "equippedBackground": "",
-      "equippedColor": "text-cyan-400 drop-shadow-[0_0_6px_rgba(34,211,238,0.7)]",
-      "equippedFont": "'Inter', sans-serif",
-      "createdAt": "2026-11-08T13:25:07.670Z"
-    }
-  ],
+  "users": [],
+  "pendingRegistrations": [],
   "channels": [
     {
       "id": "canal-geral",
       "name": "geral",
       "type": "text",
-      "description": "Canal de texto principal para conversar sobre tudo"
+      "description": "Canal de texto principal para conversar com a comunidade"
     },
     {
       "id": "canal-jogos",
@@ -57,13 +44,13 @@
       "id": "welcome-1",
       "channelId": "canal-geral",
       "userId": "system",
-      "username": "Nexus Bot 🤖",
-      "content": "Bem-vindo ao novo aplicativo de comunicação estilo Discord! Aqui você pode conversar por texto, abrir sua câmera e microfone nas salas de voz, e explorar a Loja de Customização para desbloquear novos bonequinhos, fundos, cores e fontes!",
-      "userColor": "text-cyan-400 font-bold drop-shadow-[0_0_8px_rgba(6,182,212,0.8)]",
-      "userFont": "'Orbitron', sans-serif",
-      "userAvatar": "https://api.dicebear.com/7.x/bottts/svg?seed=NexusBot&backgroundColor=06b6d4",
-      "borderEffect": "border-cyan-400 shadow-[0_0_12px_rgba(6,182,212,0.7)]",
-      "createdAt": "2026-11-08T13:17:38.314Z"
+      "username": "Aura",
+      "content": "Boas-vindas à comunidade Aura! Conecte-se com seus amigos em salas de voz e vídeo HD, participe dos canais de texto e explore a Loja de Customizações para desbloquear avatares exclusivos, fundos, cores e fontes.",
+      "userColor": "text-indigo-400 font-bold drop-shadow-[0_0_8px_rgba(99,102,241,0.8)]",
+      "userFont": "'Inter', sans-serif",
+      "userAvatar": "https://api.dicebear.com/7.x/bottts/svg?seed=AuraOfficial&backgroundColor=4f46e5",
+      "borderEffect": "border-indigo-400 shadow-[0_0_12px_rgba(99,102,241,0.7)]",
+      "createdAt": "2026-11-08T14:00:00.000Z"
     }
   ],
   "storeItems": [
@@ -272,38 +259,15 @@
       "assetValue": "'Bungee', sans-serif"
     }
   ],
-  "inventory": [
-    {
-      "id": "b7065c01-01cb-4b20-88e6-0b75f7cfff6e",
-      "userId": "3e52985f-8b61-4759-b3b5-a47b7102a6c8",
-      "itemId": "avatar_cyber_ninja",
-      "acquiredAt": "2026-11-08T13:25:07.676Z"
-    }
-  ],
+  "inventory": [],
   "transactions": [
     {
-      "id": "e66b288c-54c7-4504-9d20-f2f240f8a31e",
-      "userId": "3e52985f-8b61-4759-b3b5-a47b7102a6c8",
+      "id": "d615a4a0-f371-46d9-8a45-a076a13bc545",
+      "userId": "220f92d5-e6ea-47a1-9079-ddf37c556543",
       "amount": 600,
       "type": "BONUS_CADASTRO",
-      "description": "Bônus de boas-vindas para personalização",
-      "createdAt": "2026-11-08T13:25:07.670Z"
-    },
-    {
-      "id": "6b0f3eea-191a-4f9c-a4c3-d036389c8c82",
-      "userId": "3e52985f-8b61-4759-b3b5-a47b7102a6c8",
-      "amount": -150,
-      "type": "COMPRA_ITEM",
-      "description": "Compra do item: Ninja Cyberpunk",
-      "createdAt": "2026-11-08T13:25:07.676Z"
-    },
-    {
-      "id": "dc6544f4-6c4c-472f-a305-1366f8e2f97e",
-      "userId": "3e52985f-8b61-4759-b3b5-a47b7102a6c8",
-      "amount": 500,
-      "type": "RECARGA_MOEDAS",
-      "description": "Recarga de moedas via PIX",
-      "createdAt": "2026-11-08T13:25:07.706Z"
+      "description": "Bônus de boas-vindas para personalização Aura",
+      "createdAt": "2026-11-08T16:47:49.429Z"
     }
   ]
 }
