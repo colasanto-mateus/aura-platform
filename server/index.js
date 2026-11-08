@@ -9,7 +9,7 @@ const path = require('path');
 const { getDB, saveDB } = require('./db');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'aura_platform_secret_key_2026';
-const PORT = process.env.PORT || 4000;
+const PORT = parseInt(process.env.PORT || '4000', 10);
 
 const app = express();
 app.use(cors());
@@ -491,8 +491,8 @@ if (fs.existsSync(clientDistPath)) {
   });
 }
 
-// Inicialização
-server.listen(PORT, () => {
-  console.log(`🚀 Servidor Aura rodando na porta ${PORT}`);
+// Inicialização vinculada a 0.0.0.0 (obrigatório para Docker e Railway)
+server.listen(PORT, '0.0.0.0', () => {
+  console.log(`🚀 Servidor Aura rodando na porta ${PORT} em 0.0.0.0`);
   console.log(`📡 Acesse a plataforma no seu navegador: http://localhost:${PORT}`);
 });
